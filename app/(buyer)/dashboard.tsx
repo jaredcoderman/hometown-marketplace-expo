@@ -13,6 +13,7 @@ import {
     RefreshControl,
     StyleSheet,
     Text,
+    TextInput,
     View,
 } from 'react-native';
 
@@ -23,6 +24,7 @@ export default function BuyerDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { show } = useToast();
+  const [brandQuery, setBrandQuery] = useState('');
 
   useEffect(() => {
     loadSellers();
@@ -38,7 +40,6 @@ export default function BuyerDashboard() {
       const nearbySellers = await getNearbySellers(location, radiusMiles);
       setSellers(nearbySellers);
     } catch (error: any) {
-      console.error('Error loading sellers:', error);
       show('Failed to load nearby sellers', 'error');
     } finally {
       setLoading(false);
@@ -62,7 +63,7 @@ export default function BuyerDashboard() {
   if (!location) {
     return (
       <EmptyState
-        icon="📍"
+        iconNode={undefined}
         title="Location Not Set"
         description="Please set your location to find nearby sellers"
         actionLabel="Set Location"
@@ -70,6 +71,10 @@ export default function BuyerDashboard() {
       />
     );
   }
+
+  const filteredSellers = brandQuery.trim()
+    ? sellers.filter((s) => s.businessName.toLowerCase().includes(brandQuery.trim().toLowerCase()))
+    : sellers;
 
   return (
     <View style={styles.container}>
@@ -83,17 +88,27 @@ export default function BuyerDashboard() {
         </View>
       </View>
 
-      {sellers.length === 0 ? (
+      <View style={styles.searchBarContainer}>
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Search brands..."
+          value={brandQuery}
+          onChangeText={setBrandQuery}
+          autoCapitalize="none"
+        />
+      </View>
+
+      {filteredSellers.length === 0 ? (
         <EmptyState
-          icon="🏪"
+          iconNode={undefined}
           title="No Sellers Found"
-          description={`No sellers found within ${radiusMiles} miles of your location. Try increasing your search radius.`}
+          description={brandQuery.trim() ? `No brands match "${brandQuery}".` : `No sellers found within ${radiusMiles} miles of your location. Try increasing your search radius.`}
           actionLabel="Refresh"
           onAction={handleRefresh}
         />
       ) : (
         <FlatList
-          data={sellers}
+          data={filteredSellers}
           renderItem={({ item }) => (
             <SellerCard
               seller={item}
@@ -151,6 +166,21 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 16,
+  },
+  searchBarContainer: {
+    backgroundColor: '#FFF',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  searchBar: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    fontSize: 16,
   },
 });
 

@@ -1,18 +1,17 @@
+import { ProductCard } from '@/components/products/product-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { getAllProducts } from '@/services/product.service';
+import { Product } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
+    FlatList,
+    StyleSheet,
+    TextInput,
+    View
 } from 'react-native';
-import { router } from 'expo-router';
-import { Product } from '@/types';
-import { getAllProducts } from '@/services/product.service';
-import { ProductCard } from '@/components/products/product-card';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Ionicons } from '@expo/vector-icons';
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
