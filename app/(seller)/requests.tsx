@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui/button';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { getProduct, updateProduct } from '@/services/product.service';
 import { getRequestsBySeller, updateRequestStatus } from '@/services/request.service';
 import { getSellerByUserId } from '@/services/seller.service';
@@ -10,7 +12,7 @@ import { ProductRequest } from '@/types';
 import { formatPrice } from '@/utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     FlatList,
     RefreshControl,
@@ -28,6 +30,21 @@ export default function RequestsScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [confirmKind, setConfirmKind] = useState<'approve' | 'reject' | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<ProductRequest | null>(null);
+  const { show } = useToast();
+
+  // Clear selection after modal fully closes to avoid content flicker
+  useEffect(() => {
+    if (!confirmVisible) {
+      const t = setTimeout(() => {
+        setSelectedRequest(null);
+        setConfirmKind(null);
+      }, 220);
+      return () => clearTimeout(t);
+    }
+  }, [confirmVisible]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -46,7 +63,7 @@ export default function RequestsScreen() {
       }
     } catch (error: any) {
       console.error('Error loading requests:', error);
-      window.alert('Failed to load requests: ' + (error.message || 'Unknown error'));
+      show('Failed to load requests', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -58,13 +75,7 @@ export default function RequestsScreen() {
     loadRequests();
   };
 
-  const handleApprove = async (request: ProductRequest) => {
-    const confirmed = window.confirm(
-      `Approve request from ${request.buyerName} for ${request.quantity}x ${request.productName}?\n\nThis will update your product quantity.`
-    );
-
-    if (!confirmed) return;
-
+  const doApprove = async (request: ProductRequest) => {
     setProcessingId(request.id);
     try {
       // Update request status
@@ -80,31 +91,25 @@ export default function RequestsScreen() {
         });
       }
 
-      window.alert('Request approved! Product quantity updated.');
+      show('Request approved! Quantity updated.', 'success');
       loadRequests();
     } catch (error: any) {
       console.error('Error approving request:', error);
-      window.alert('Failed to approve request: ' + (error.message || 'Unknown error'));
+      show('Failed to approve request', 'error');
     } finally {
       setProcessingId(null);
     }
   };
 
-  const handleReject = async (request: ProductRequest) => {
-    const confirmed = window.confirm(
-      `Reject request from ${request.buyerName}?`
-    );
-
-    if (!confirmed) return;
-
+  const doReject = async (request: ProductRequest) => {
     setProcessingId(request.id);
     try {
       await updateRequestStatus(request.id, 'rejected');
-      window.alert('Request rejected.');
+      show('Request rejected', 'info');
       loadRequests();
     } catch (error: any) {
       console.error('Error rejecting request:', error);
-      window.alert('Failed to reject request: ' + (error.message || 'Unknown error'));
+      show('Failed to reject request', 'error');
     } finally {
       setProcessingId(null);
     }
@@ -196,14 +201,14 @@ export default function RequestsScreen() {
               <View style={styles.actions}>
                 <Button
                   title="Approve"
-                  onPress={() => handleApprove(item)}
+                  onPress={() => { setSelectedRequest(item); setConfirmKind('approve'); setConfirmVisible(true); }}
                   loading={isProcessing}
                   variant="primary"
                   style={styles.actionButton}
                 />
                 <Button
                   title="Reject"
-                  onPress={() => handleReject(item)}
+                  onPress={() => { setSelectedRequest(item); setConfirmKind('reject'); setConfirmVisible(true); }}
                   loading={isProcessing}
                   variant="danger"
                   style={styles.actionButton}
@@ -238,6 +243,7 @@ export default function RequestsScreen() {
   };
 
   return (
+    <>
     <View style={styles.container}>
       {requests.length === 0 ? (
         <EmptyState
@@ -287,6 +293,24 @@ export default function RequestsScreen() {
         </>
       )}
     </View>
+      <ConfirmModal
+        visible={confirmVisible}
+        title={confirmKind === 'approve' ? 'Approve Request' : 'Reject Request'}
+        message={
+          confirmKind === 'approve'
+            ? `Approve ${selectedRequest?.buyerName}'s request for ${selectedRequest?.quantity}× ${selectedRequest?.productName}? This will reduce your available quantity.`
+            : `Reject the request from ${selectedRequest?.buyerName}?`
+        }
+        confirmLabel={confirmKind === 'approve' ? 'Approve' : 'Reject'}
+        cancelLabel={'Cancel'}
+        onCancel={() => { setConfirmVisible(false); }}
+        onConfirm={() => {
+          if (!selectedRequest) return;
+          setConfirmVisible(false);
+          if (confirmKind === 'approve') doApprove(selectedRequest); else doReject(selectedRequest);
+        }}
+      />
+    </>
   );
 }
 

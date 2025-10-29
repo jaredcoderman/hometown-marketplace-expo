@@ -93,7 +93,6 @@ export default function CreateProductScreen() {
         quantity: quantity ? parseInt(quantity) : undefined,
       });
 
-      console.log('Product created successfully with ID:', productId);
       
       // Clear all fields
       setName('');

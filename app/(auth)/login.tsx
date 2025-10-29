@@ -26,19 +26,12 @@ export default function LoginScreen() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      console.log('User already logged in, redirecting to dashboard');
       const targetRoute = user.userType === 'buyer' ? '/(buyer)/dashboard' : '/(seller)/dashboard';
       router.replace(targetRoute);
     }
   }, [user, authLoading, router]);
 
   const handleLogin = async () => {
-    console.log('=== LOGIN BUTTON CLICKED ===');
-    console.log('Email:', email);
-    console.log('Password length:', password.length);
-    console.log('Loading state:', loading);
-    console.log('Auth loading state:', authLoading);
-    
     // Reset errors
     setErrors({});
 
@@ -46,32 +39,23 @@ export default function LoginScreen() {
     const newErrors: { email?: string; password?: string } = {};
     if (!email) {
       newErrors.email = 'Email is required';
-      console.log('Email is empty!');
+      
     }
     if (!password) {
       newErrors.password = 'Password is required';
-      console.log('Password is empty!');
+      
     }
 
     if (Object.keys(newErrors).length > 0) {
-      console.log('Validation errors:', newErrors);
       setErrors(newErrors);
       return;
     }
 
-    console.log('Validation passed, setting loading to true');
     setLoading(true);
-    console.log('Calling login function with email:', email);
     try {
       const result = await login({ email, password });
-      console.log('Login function completed successfully!', result);
       // Navigation is handled by the index screen based on user type
     } catch (error: any) {
-      console.error('=== LOGIN ERROR ===');
-      console.error('Error:', error);
-      console.error('Error message:', error.message);
-      console.error('Error code:', error.code);
-      console.error('Error stack:', error.stack);
       let msg = 'Login failed. Please check your email and password.';
       if (error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password') {
         msg = 'Incorrect email or password.';
@@ -82,7 +66,6 @@ export default function LoginScreen() {
       }
       show(msg, 'error');
     } finally {
-      console.log('Setting loading to false');
       setLoading(false);
     }
   };

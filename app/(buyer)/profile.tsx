@@ -2,7 +2,8 @@ import { Button } from '@/components/ui/button';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
-import { confirmAsync, showAlert } from '@/utils/dialogs';
+import { useToast } from '@/contexts/ToastContext';
+import { confirmAsync } from '@/utils/dialogs';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
@@ -17,31 +18,27 @@ import {
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { location, getCurrentLocation } = useLocation();
+  const { show } = useToast();
 
   const handleLogout = async () => {
-    console.log('Logout button clicked');
     const confirmed = await confirmAsync('Are you sure you want to logout?');
     if (confirmed) {
       try {
-        console.log('Calling logout function...');
         await logout();
-        console.log('Logout successful, redirecting...');
         router.replace('/(auth)/login');
       } catch (error: any) {
         console.error('Logout error:', error);
-        showAlert('Failed to logout', error.message || 'Unknown error');
+        show('Failed to logout', 'error');
       }
-    } else {
-      console.log('Logout cancelled');
     }
   };
 
   const handleUpdateLocation = async () => {
     try {
       await getCurrentLocation();
-      showAlert('Success', 'Location updated successfully');
+      show('Location updated successfully', 'success');
     } catch (error: any) {
-      showAlert('Failed to update location', error.message || 'Unknown error');
+      show('Failed to update location', 'error');
     }
   };
 

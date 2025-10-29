@@ -3,9 +3,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Colors from '@/constants/Colors';
+import { useToast } from '@/contexts/ToastContext';
 import { deleteProduct, getProduct, toggleProductStock } from '@/services/product.service';
 import { Product } from '@/types';
-import { confirmAsync, showAlert } from '@/utils/dialogs';
+import { confirmAsync } from '@/utils/dialogs';
 import { formatPrice } from '@/utils/formatters';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -26,6 +27,7 @@ export default function SellerProductDetailScreen() {
   const [quantityInput, setQuantityInput] = useState<string>('');
   const scrollRef = useRef<ScrollView>(null);
   const [qtyInputY, setQtyInputY] = useState(0);
+  const { show } = useToast();
 
   useEffect(() => {
     loadProduct();
@@ -42,7 +44,7 @@ export default function SellerProductDetailScreen() {
       );
     } catch (error: any) {
       console.error('Error loading product:', error);
-      showAlert('Failed to load product', error.message || 'Unknown error');
+      show('Failed to load product', 'error');
     } finally {
       setLoading(false);
     }
@@ -52,13 +54,12 @@ export default function SellerProductDetailScreen() {
     if (!product) return;
 
     try {
-      console.log('Toggling stock status...');
       await toggleProductStock(product.id, !product.inStock);
       setProduct({ ...product, inStock: !product.inStock });
-      showAlert('Success', `Product marked as ${!product.inStock ? 'in stock' : 'out of stock'}`);
+      show(`Product marked as ${!product.inStock ? 'in stock' : 'out of stock'}`, 'success');
     } catch (error: any) {
       console.error('Error updating stock:', error);
-      showAlert('Failed to update stock status', error.message || 'Unknown error');
+      show('Failed to update stock status', 'error');
     }
   };
 
@@ -66,7 +67,7 @@ export default function SellerProductDetailScreen() {
     if (!product) return;
     const parsed = parseInt(quantityInput, 10);
     if (isNaN(parsed) || parsed < 0) {
-      showAlert('Invalid quantity', 'Please enter a non-negative whole number.');
+      show('Please enter a non-negative whole number', 'error');
       return;
     }
     setUpdatingQty(true);
@@ -74,9 +75,9 @@ export default function SellerProductDetailScreen() {
       const { updateProduct } = await import('@/services/product.service');
       await updateProduct(product.id, { quantity: parsed, inStock: parsed > 0 });
       setProduct({ ...product, quantity: parsed, inStock: parsed > 0 });
-      showAlert('Success', 'Quantity updated');
+      show('Quantity updated', 'success');
     } catch (error: any) {
-      showAlert('Failed to update quantity', error.message || 'Unknown error');
+      show('Failed to update quantity', 'error');
     } finally {
       setUpdatingQty(false);
     }
@@ -85,22 +86,17 @@ export default function SellerProductDetailScreen() {
   const handleDelete = async () => {
     if (!product) return;
 
-    console.log('Delete button clicked for product:', product.id);
     const confirmed = await confirmAsync('Are you sure you want to delete this product? This action cannot be undone.');
     
     if (confirmed) {
       try {
-        console.log('Deleting product...');
         await deleteProduct(product.id);
-        console.log('Product deleted successfully, navigating back');
         // Navigate immediately without showing success alert
         router.back();
       } catch (error: any) {
         console.error('Error deleting product:', error);
-        showAlert('Failed to delete product', error.message || 'Unknown error');
+        show('Failed to delete product', 'error');
       }
-    } else {
-      console.log('Delete cancelled');
     }
   };
 

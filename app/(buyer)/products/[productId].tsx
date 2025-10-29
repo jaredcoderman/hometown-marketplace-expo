@@ -52,7 +52,6 @@ export default function ProductDetailScreen() {
       const sellerData = await getSeller(productData.sellerId);
       setSeller(sellerData);
     } catch (error: any) {
-      console.error('Error loading product data:', error);
       show('Failed to load product information', 'error');
     } finally {
       setLoading(false);
@@ -105,7 +104,6 @@ export default function ProductDetailScreen() {
       setQuantity('1');
       setMessage('');
     } catch (error: any) {
-      console.error('Error submitting request:', error);
       show('Failed to send request', 'error');
     } finally {
       setSubmitting(false);

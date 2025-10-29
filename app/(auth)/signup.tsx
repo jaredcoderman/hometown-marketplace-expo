@@ -25,7 +25,6 @@ export default function SignupScreen() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      console.log('User already logged in, redirecting to dashboard');
       const targetRoute = user.userType === 'buyer' ? '/(buyer)/dashboard' : '/(seller)/dashboard';
       router.replace(targetRoute);
     }
@@ -66,17 +65,10 @@ export default function SignupScreen() {
     if (!validateAll()) return;
 
     setLoading(true);
-    console.log('Starting signup with:', { name, email, userType });
     try {
       await signup({ name, email, password, userType });
-      console.log('Signup completed successfully!');
       // Navigation is handled by the index screen
     } catch (error: any) {
-      console.error('Signup error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code
-      });
       let msg = 'Signup failed. Please try again.';
       if (error?.code === 'auth/email-already-in-use') msg = 'That email is already in use.';
       else if (error?.code === 'auth/invalid-email') msg = 'Enter a valid email address.';

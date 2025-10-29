@@ -30,7 +30,6 @@ export default function ProductsListScreen() {
   // Reload products when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('Products screen focused, reloading...');
       loadProducts();
     }, [user])
   );

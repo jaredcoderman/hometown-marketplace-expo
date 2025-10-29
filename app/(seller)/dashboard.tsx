@@ -29,7 +29,6 @@ export default function SellerDashboard() {
   // Reload data when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('Dashboard focused, reloading data...');
       loadSellerData();
     }, [user])
   );
@@ -53,7 +52,6 @@ export default function SellerDashboard() {
   };
 
   const handleSetupProfile = () => {
-    console.log('Setup Profile button clicked - navigating to profile page');
     router.push('/(seller)/profile');
   };
 

@@ -91,6 +91,8 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
+    borderWidth: 1,
+    borderColor: Colors.avatarRing,
   },
   avatarPlaceholder: {
     width: 60,
@@ -99,6 +101,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.avatarRing,
   },
   avatarText: {
     color: '#FFF',

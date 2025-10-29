@@ -39,6 +39,8 @@ export const Colors = {
   border: '#EFEBE9',         // Warm gray
   divider: '#D7CCC8',        // Light brown gray
   disabled: '#BCAAA4',       // Gray brown
+  // Accent neutrals
+  avatarRing: '#C0C0C0',     // Silver for avatar outline
   
   // Shadows
   shadow: 'rgba(62, 39, 35, 0.1)',

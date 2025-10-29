@@ -1,22 +1,25 @@
 import { Button } from '@/components/ui/button';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
+import { useToast } from '@/contexts/ToastContext';
 import { createSeller, getSellerByUserId, updateSeller } from '@/services/seller.service';
+import { pickImage, uploadUserAvatar } from '@/services/storage.service';
 import { Seller } from '@/types';
-import { confirmAsync, showAlert } from '@/utils/dialogs';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 export default function SellerProfileScreen() {
@@ -31,6 +34,10 @@ export default function SellerProfileScreen() {
   const [description, setDescription] = useState('');
   const [categories, setCategories] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { show } = useToast();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [confirmLogoutVisible, setConfirmLogoutVisible] = useState(false);
 
   useEffect(() => {
     loadSellerProfile();
@@ -46,6 +53,7 @@ export default function SellerProfileScreen() {
         setBusinessName(sellerData.businessName);
         setDescription(sellerData.description);
         setCategories(sellerData.categories?.join(', ') || '');
+        setAvatarUrl(sellerData.avatar || null);
       }
     } catch (error) {
       console.error('Error loading seller profile:', error);
@@ -71,7 +79,7 @@ export default function SellerProfileScreen() {
   const handleSave = async () => {
     if (!validate()) return;
     if (!user || !location) {
-      showAlert('Missing Info', 'User or location information missing');
+      show('User or location information missing', 'error');
       return;
     }
 
@@ -89,8 +97,9 @@ export default function SellerProfileScreen() {
           description: description.trim(),
           categories: categoryArray,
           location,
+          avatar: avatarUrl || undefined,
         });
-        showAlert('Success', 'Profile updated successfully!');
+        show('Profile updated successfully!', 'success');
       } else {
         // Create new seller
         await createSeller(user.id, {
@@ -99,36 +108,23 @@ export default function SellerProfileScreen() {
           description: description.trim(),
           categories: categoryArray,
           location,
+          avatar: avatarUrl || undefined,
         });
-        showAlert('Success', 'Seller profile created successfully!');
+        show('Seller profile created successfully!', 'success');
         router.replace('/(seller)/dashboard');
       }
 
       await loadSellerProfile();
     } catch (error: any) {
       console.error('Error saving seller profile:', error);
-      showAlert('Error', error.message || 'Failed to save profile');
+      show('Failed to save profile', 'error');
     } finally {
       setSaving(false);
     }
   };
 
   const handleLogout = async () => {
-    console.log('Logout button clicked');
-    const confirmed = await confirmAsync('Are you sure you want to logout?');
-    if (confirmed) {
-      try {
-        console.log('Calling logout function...');
-        await logout();
-        console.log('Logout successful, redirecting...');
-        router.replace('/(auth)/login');
-      } catch (error: any) {
-        console.error('Logout error:', error);
-        showAlert('Failed to logout', error.message || 'Unknown error');
-      }
-    } else {
-      console.log('Logout cancelled');
-    }
+    setConfirmLogoutVisible(true);
   };
 
   if (loading) {
@@ -145,10 +141,36 @@ export default function SellerProfileScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {businessName.charAt(0).toUpperCase() || user?.name.charAt(0).toUpperCase()}
-            </Text>
+          <View style={styles.avatarWrapper}>
+            <View style={styles.avatar}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {businessName.charAt(0).toUpperCase() || user?.name.charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <Button
+              title={uploadingAvatar ? 'Uploading...' : 'Change Photo'}
+              onPress={async () => {
+                try {
+                  setUploadingAvatar(true);
+                  const uri = await pickImage();
+                  if (!uri || !user) { setUploadingAvatar(false); return; }
+                  const url = await uploadUserAvatar(user.id, uri);
+                  setAvatarUrl(url);
+                  show('Profile photo updated', 'success');
+                } catch (e: any) {
+                  show('Failed to update photo', 'error');
+                } finally {
+                  setUploadingAvatar(false);
+                }
+              }}
+              variant="outline"
+              size="small"
+              style={styles.changePhotoBtn}
+            />
           </View>
           <Text style={styles.name}>{user?.name}</Text>
           <Text style={styles.email}>{user?.email}</Text>
@@ -199,18 +221,34 @@ export default function SellerProfileScreen() {
             </Text>
           </View>
 
-          <Button
-            title={seller ? 'Update Profile' : 'Create Profile'}
-            onPress={handleSave}
-            loading={saving}
-            style={styles.saveButton}
-          />
-
-          <View style={styles.section}>
-            <Button title="Logout" onPress={handleLogout} variant="danger" />
+          <View style={styles.actionsRow}>
+            <Button
+              title={seller ? 'Update Profile' : 'Create Profile'}
+              onPress={handleSave}
+              loading={saving}
+              style={{ flex: 1 }}
+            />
+            <Button title="Logout" onPress={handleLogout} variant="danger" style={{ flex: 1, marginLeft: 8 }} />
           </View>
         </View>
       </ScrollView>
+      <ConfirmModal
+        visible={confirmLogoutVisible}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        onCancel={() => setConfirmLogoutVisible(false)}
+        onConfirm={async () => {
+          setConfirmLogoutVisible(false);
+          try {
+            await logout();
+            router.replace('/(auth)/login');
+          } catch (error: any) {
+            show('Failed to logout', 'error');
+          }
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -230,19 +268,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  avatarWrapper: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.avatarRing,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  changePhotoBtn: {
+    marginTop: 4,
   },
   avatarText: {
     color: '#FFF',
     fontSize: 36,
     fontWeight: '600',
+  },
+  avatarImg: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
   },
   name: {
     fontSize: 24,
@@ -312,8 +362,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: Colors.primary,
   },
-  saveButton: {
-    marginBottom: 24,
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
   },
   section: {
     marginTop: 24,

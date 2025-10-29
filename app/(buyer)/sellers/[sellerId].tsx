@@ -43,7 +43,6 @@ export default function SellerDetailScreen() {
       setSeller(sellerData);
       setProducts(productsData);
     } catch (error: any) {
-      console.error('Error loading seller data:', error);
       show('Failed to load seller information', 'error');
     } finally {
       setLoading(false);

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hometown Marketplace – Autumn Color Palette</title>
+  <style>
+    :root {
+      --bg: #FEFDFB;
+      --card: #FFFFFF;
+      --text: #3E2723;
+      --text-secondary: #6D4C41;
+      --border: #EFEBE9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: 24px;
+    }
+    p { margin: 0 0 24px; color: var(--text-secondary); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .swatch {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(62, 39, 35, 0.08);
+    }
+    .colorBox {
+      height: 84px;
+      width: 100%;
+    }
+    .meta { padding: 12px; }
+    .name { font-weight: 700; margin-bottom: 6px; font-size: 14px; }
+    .hex { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text-secondary); font-size: 13px; }
+  </style>
+  <script>
+    // Colors mirrored from constants/Colors.ts
+    const colors = [
+      { name: 'primary', hex: '#D2691E' },
+      { name: 'primaryDark', hex: '#8B4513' },
+      { name: 'primaryLight', hex: '#F4A460' },
+      { name: 'secondary', hex: '#CD853F' },
+      { name: 'secondaryDark', hex: '#A0522D' },
+      { name: 'secondaryLight', hex: '#DEB887' },
+      { name: 'accent', hex: '#DAA520' },
+      { name: 'accentDark', hex: '#B8860B' },
+      { name: 'accentLight', hex: '#FFD700' },
+      { name: 'background', hex: '#FEFDFB' },
+      { name: 'backgroundSecondary', hex: '#FFF8F0' },
+      { name: 'card', hex: '#FFFFFF' },
+      { name: 'text', hex: '#3E2723' },
+      { name: 'textSecondary', hex: '#6D4C41' },
+      { name: 'textLight', hex: '#8D6E63' },
+      { name: 'success', hex: '#689F38' },
+      { name: 'error', hex: '#C62828' },
+      { name: 'warning', hex: '#F57C00' },
+      { name: 'info', hex: '#0277BD' },
+      { name: 'border', hex: '#EFEBE9' },
+      { name: 'divider', hex: '#D7CCC8' },
+      { name: 'disabled', hex: '#BCAAA4' },
+      { name: 'shadow', hex: 'rgba(62, 39, 35, 0.1)' },
+      { name: 'shadowDark', hex: 'rgba(62, 39, 35, 0.2)' },
+    ];
+    window.addEventListener('DOMContentLoaded', () => {
+      const grid = document.querySelector('.grid');
+      colors.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'swatch';
+        const box = document.createElement('div');
+        box.className = 'colorBox';
+        box.style.background = c.hex;
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = c.name;
+        const hex = document.createElement('div');
+        hex.className = 'hex';
+        hex.textContent = c.hex;
+        meta.appendChild(name);
+        meta.appendChild(hex);
+        card.appendChild(box);
+        card.appendChild(meta);
+        grid.appendChild(card);
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Hometown Marketplace – Autumn Color Palette</h1>
+  <p>Colors mirrored from <code>constants/Colors.ts</code> for quick visual reference.</p>
+  <div class="grid"></div>
+</body>
+</html>
+
+
