@@ -4,21 +4,37 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { LocationProvider } from '@/contexts/LocationContext';
+import Colors from '@/constants/Colors';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
+// Custom autumn theme
+const AutumnTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: Colors.primary,
+    background: Colors.background,
+    card: Colors.card,
+    text: Colors.text,
+    border: Colors.border,
+  },
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AuthProvider>
+      <LocationProvider>
+        <ThemeProvider value={AutumnTheme}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(buyer)" />
+            <Stack.Screen name="(seller)" />
+          </Stack>
+          <StatusBar style="dark" />
+        </ThemeProvider>
+      </LocationProvider>
+    </AuthProvider>
   );
 }

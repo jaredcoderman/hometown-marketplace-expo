@@ -1,3 +1,42 @@
+# Node/Expo/React Native
+node_modules/
+.expo/
+.expo-shared/
+.metro-cache/
+web-build/
+dist/
+.cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+
+# Testing/coverage
+coverage/
+
+# Firebase/Emulator
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.runtimeconfig.json
+
+# Env files (if you add any later)
+.env
+.env.*
+.env.local
+.env.development.local
+.env.production.local
+
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies

@@ -1,0 +1,278 @@
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import Colors from '@/constants/Colors';
+import { deleteProduct, getProduct, toggleProductStock } from '@/services/product.service';
+import { Product } from '@/types';
+import { formatPrice } from '@/utils/formatters';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View
+} from 'react-native';
+
+export default function SellerProductDetailScreen() {
+  const { productId } = useLocalSearchParams<{ productId: string }>();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProduct();
+  }, [productId]);
+
+  const loadProduct = async () => {
+    if (!productId) return;
+
+    try {
+      const productData = await getProduct(productId);
+      setProduct(productData);
+    } catch (error: any) {
+      console.error('Error loading product:', error);
+      window.alert('Failed to load product: ' + (error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleStock = async () => {
+    if (!product) return;
+
+    try {
+      console.log('Toggling stock status...');
+      await toggleProductStock(product.id, !product.inStock);
+      setProduct({ ...product, inStock: !product.inStock });
+      window.alert(`Product marked as ${!product.inStock ? 'in stock' : 'out of stock'}`);
+    } catch (error: any) {
+      console.error('Error updating stock:', error);
+      window.alert('Failed to update stock status: ' + (error.message || 'Unknown error'));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!product) return;
+
+    console.log('Delete button clicked for product:', product.id);
+    const confirmed = window.confirm('Are you sure you want to delete this product? This action cannot be undone.');
+    
+    if (confirmed) {
+      try {
+        console.log('Deleting product...');
+        await deleteProduct(product.id);
+        console.log('Product deleted successfully, navigating back');
+        // Navigate immediately without showing success alert
+        router.back();
+      } catch (error: any) {
+        console.error('Error deleting product:', error);
+        window.alert('Failed to delete product: ' + (error.message || 'Unknown error'));
+      }
+    } else {
+      console.log('Delete cancelled');
+    }
+  };
+
+  if (loading) {
+    return <LoadingSpinner fullScreen message="Loading product..." />;
+  }
+
+  if (!product) {
+    return (
+      <EmptyState
+        icon="❌"
+        title="Product Not Found"
+        actionLabel="Go Back"
+        onAction={() => router.back()}
+      />
+    );
+  }
+
+  return (
+    <>
+      <Stack.Screen
+        options={{
+          title: product.name,
+          headerShown: true,
+        }}
+      />
+      <ScrollView style={styles.container}>
+        {/* Product Images */}
+        {product.images && product.images.length > 0 ? (
+          <ScrollView horizontal pagingEnabled style={styles.imageScroll}>
+            {product.images.map((image, index) => (
+              <Image
+                key={index}
+                source={{ uri: image }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.placeholderText}>No Image</Text>
+          </View>
+        )}
+
+        <View style={styles.content}>
+          {/* Status Badge */}
+          <View
+            style={[
+              styles.statusBadge,
+              product.inStock ? styles.inStockBadge : styles.outOfStockBadge,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                product.inStock ? styles.inStockText : styles.outOfStockText,
+              ]}
+            >
+              {product.inStock ? '✓ In Stock' : '✕ Out of Stock'}
+            </Text>
+          </View>
+
+          <Text style={styles.name}>{product.name}</Text>
+          <Text style={styles.price}>{formatPrice(product.price)}</Text>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.description}>{product.description}</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Details</Text>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Category:</Text>
+              <Text style={styles.detailValue}>{product.category}</Text>
+            </View>
+            {product.quantity !== undefined && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Quantity:</Text>
+                <Text style={styles.detailValue}>{product.quantity}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Actions */}
+          <View style={styles.actions}>
+            <Button
+              title={product.inStock ? 'Mark Out of Stock' : 'Mark In Stock'}
+              onPress={handleToggleStock}
+              variant="secondary"
+              style={styles.actionButton}
+            />
+
+            <Button
+              title="Delete Product"
+              onPress={handleDelete}
+              variant="danger"
+              style={styles.actionButton}
+            />
+          </View>
+        </View>
+      </ScrollView>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  imageScroll: {
+    height: 300,
+  },
+  image: {
+    width: 400,
+    height: 300,
+  },
+  imagePlaceholder: {
+    height: 300,
+    backgroundColor: Colors.backgroundSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    fontSize: 18,
+    color: Colors.textLight,
+  },
+  content: {
+    padding: 20,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  inStockBadge: {
+    backgroundColor: '#E8F5E9',
+  },
+  outOfStockBadge: {
+    backgroundColor: '#FFEBEE',
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  inStockText: {
+    color: Colors.success,
+  },
+  outOfStockText: {
+    color: Colors.error,
+  },
+  name: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  price: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 24,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 12,
+  },
+  description: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    lineHeight: 24,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    width: 100,
+  },
+  detailValue: {
+    fontSize: 16,
+    color: Colors.text,
+    fontWeight: '500',
+    flex: 1,
+  },
+  actions: {
+    marginTop: 16,
+    gap: 12,
+  },
+  actionButton: {
+    width: '100%',
+  },
+});
+
