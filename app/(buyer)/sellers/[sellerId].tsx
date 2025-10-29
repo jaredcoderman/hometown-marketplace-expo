@@ -1,6 +1,7 @@
 import { ProductCard } from '@/components/products/product-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useToast } from '@/contexts/ToastContext';
 import { getProductsBySeller } from '@/services/product.service';
 import { getSeller } from '@/services/seller.service';
 import { Product, Seller } from '@/types';
@@ -18,6 +19,7 @@ import {
 
 export default function SellerDetailScreen() {
   const { sellerId } = useLocalSearchParams<{ sellerId: string }>();
+  const { show } = useToast();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,9 +44,7 @@ export default function SellerDetailScreen() {
       setProducts(productsData);
     } catch (error: any) {
       console.error('Error loading seller data:', error);
-      if (typeof window !== 'undefined') {
-        window.alert('Failed to load seller information');
-      }
+      show('Failed to load seller information', 'error');
     } finally {
       setLoading(false);
     }

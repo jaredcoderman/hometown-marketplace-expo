@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 import Colors from '@/constants/Colors';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LocationProvider } from '@/contexts/LocationContext';
+import { ToastProvider } from '@/contexts/ToastContext';
 
 // Custom autumn theme
 const AutumnTheme = {
@@ -26,6 +27,7 @@ export default function RootLayout() {
     <AuthProvider>
       <LocationProvider>
         <ThemeProvider value={AutumnTheme}>
+          <ToastProvider>
           <Stack
             screenOptions={{
               headerShown: true,
@@ -44,6 +46,7 @@ export default function RootLayout() {
             <Stack.Screen name="(seller)" />
           </Stack>
           <StatusBar style="dark" />
+          </ToastProvider>
         </ThemeProvider>
       </LocationProvider>
     </AuthProvider>

@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { UserType } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
@@ -19,6 +20,7 @@ import {
 export default function SignupScreen() {
   const { signup, user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { show } = useToast();
   
   // Redirect if already logged in
   useEffect(() => {
@@ -36,22 +38,32 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSignup = async () => {
-    // Reset errors
-    setErrors({});
+  const emailRegex = /^(?:[a-zA-Z0-9_'^&\-]+(?:\.[a-zA-Z0-9_'^&\-]+)*)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
 
-    // Basic validation
+  const setFieldError = (field: string, message?: string) => {
+    setErrors((prev) => {
+      const next = { ...prev } as Record<string, string>;
+      if (message) next[field] = message; else delete next[field];
+      return next;
+    });
+  };
+
+  const validateAll = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!name) newErrors.name = 'Name is required';
-    if (!email) newErrors.email = 'Email is required';
+    if (!name.trim()) newErrors.name = 'Name is required';
+    if (!email.trim()) newErrors.email = 'Email is required';
+    else if (!emailRegex.test(email.trim())) newErrors.email = 'Enter a valid email';
     if (!password) newErrors.password = 'Password is required';
-    if (password.length < 8) newErrors.password = 'Password must be at least 8 characters';
-    if (password !== confirmPassword) newErrors.confirmPassword = "Passwords don't match";
+    else if (password.length < 8) newErrors.password = 'Use at least 8 characters';
+    if (!confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
+    else if (password !== confirmPassword) newErrors.confirmPassword = "Passwords don't match";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+  const handleSignup = async () => {
+    // Validate all fields before attempting signup
+    if (!validateAll()) return;
 
     setLoading(true);
     console.log('Starting signup with:', { name, email, userType });
@@ -65,7 +77,11 @@ export default function SignupScreen() {
         message: error.message,
         code: error.code
       });
-      window.alert('Signup Failed: ' + (error.message || 'Please try again'));
+      let msg = 'Signup failed. Please try again.';
+      if (error?.code === 'auth/email-already-in-use') msg = 'That email is already in use.';
+      else if (error?.code === 'auth/invalid-email') msg = 'Enter a valid email address.';
+      else if (error?.code === 'auth/weak-password') msg = 'Password is too weak.';
+      show(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -100,7 +116,10 @@ export default function SignupScreen() {
           <Input
             label="Full Name"
             value={name}
-            onChangeText={setName}
+            onChangeText={(v) => {
+              setName(v);
+              setFieldError('name', v.trim() ? undefined : 'Name is required');
+            }}
             placeholder="John Doe"
             error={errors.name}
           />
@@ -108,7 +127,12 @@ export default function SignupScreen() {
           <Input
             label="Email"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(v) => {
+              setEmail(v);
+              if (!v.trim()) setFieldError('email', 'Email is required');
+              else if (!emailRegex.test(v.trim())) setFieldError('email', 'Enter a valid email');
+              else setFieldError('email', undefined);
+            }}
             placeholder="your@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -118,7 +142,15 @@ export default function SignupScreen() {
           <Input
             label="Password"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(v) => {
+              setPassword(v);
+              if (!v) setFieldError('password', 'Password is required');
+              else if (v.length < 8) setFieldError('password', 'Use at least 8 characters');
+              else setFieldError('password', undefined);
+              // keep confirm error up to date
+              if (confirmPassword && v !== confirmPassword) setFieldError('confirmPassword', "Passwords don't match");
+              else if (confirmPassword) setFieldError('confirmPassword', undefined);
+            }}
             placeholder="At least 8 characters"
             secureTextEntry
             error={errors.password}
@@ -127,7 +159,12 @@ export default function SignupScreen() {
           <Input
             label="Confirm Password"
             value={confirmPassword}
-            onChangeText={setConfirmPassword}
+            onChangeText={(v) => {
+              setConfirmPassword(v);
+              if (!v) setFieldError('confirmPassword', 'Please confirm your password');
+              else if (v !== password) setFieldError('confirmPassword', "Passwords don't match");
+              else setFieldError('confirmPassword', undefined);
+            }}
             placeholder="Re-enter your password"
             secureTextEntry
             error={errors.confirmPassword}

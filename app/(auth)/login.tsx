@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { Link, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -11,11 +13,11 @@ import {
     Text,
     View,
 } from 'react-native';
-import Colors from '@/constants/Colors';
 
 export default function LoginScreen() {
   const { login, user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { show } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,7 +72,15 @@ export default function LoginScreen() {
       console.error('Error message:', error.message);
       console.error('Error code:', error.code);
       console.error('Error stack:', error.stack);
-      window.alert('Login Failed: ' + (error.message || 'Please check your email and password'));
+      let msg = 'Login failed. Please check your email and password.';
+      if (error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password') {
+        msg = 'Incorrect email or password.';
+      } else if (error?.code === 'auth/user-not-found') {
+        msg = 'No account found for that email.';
+      } else if (error?.code === 'auth/too-many-requests') {
+        msg = 'Too many attempts. Try again later.';
+      }
+      show(msg, 'error');
     } finally {
       console.log('Setting loading to false');
       setLoading(false);

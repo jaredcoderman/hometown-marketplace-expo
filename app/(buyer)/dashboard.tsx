@@ -3,12 +3,12 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
+import { useToast } from '@/contexts/ToastContext';
 import { getNearbySellers } from '@/services/seller.service';
 import { SellerWithDistance } from '@/types';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
     FlatList,
     RefreshControl,
     StyleSheet,
@@ -22,6 +22,7 @@ export default function BuyerDashboard() {
   const [sellers, setSellers] = useState<SellerWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { show } = useToast();
 
   useEffect(() => {
     loadSellers();
@@ -38,7 +39,7 @@ export default function BuyerDashboard() {
       setSellers(nearbySellers);
     } catch (error: any) {
       console.error('Error loading sellers:', error);
-      Alert.alert('Error', 'Failed to load nearby sellers');
+      show('Failed to load nearby sellers', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);

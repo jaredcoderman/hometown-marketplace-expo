@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { getProduct } from '@/services/product.service';
 import { getSeller } from '@/services/seller.service';
 import { Product, Seller } from '@/types';
@@ -28,6 +29,7 @@ const IMAGE_HEIGHT = 300; // Fixed height for images
 export default function ProductDetailScreen() {
   const { productId } = useLocalSearchParams<{ productId: string }>();
   const { user } = useAuth();
+  const { show } = useToast();
   const [product, setProduct] = useState<Product | null>(null);
   const [seller, setSeller] = useState<Seller | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ export default function ProductDetailScreen() {
       setSeller(sellerData);
     } catch (error: any) {
       console.error('Error loading product data:', error);
-      window.alert('Failed to load product information: ' + (error.message || 'Unknown error'));
+      show('Failed to load product information', 'error');
     } finally {
       setLoading(false);
     }
@@ -71,12 +73,12 @@ export default function ProductDetailScreen() {
 
     const qty = parseInt(quantity);
     if (isNaN(qty) || qty < 1) {
-      window.alert('Please enter a valid quantity');
+      show('Please enter a valid quantity', 'error');
       return;
     }
 
     if (product.quantity !== undefined && qty > product.quantity) {
-      window.alert(`Only ${product.quantity} available`);
+      show(`Only ${product.quantity} available`, 'error');
       return;
     }
 
@@ -98,13 +100,13 @@ export default function ProductDetailScreen() {
         status: 'pending',
       });
 
-      window.alert('Request sent successfully! The seller will review it soon.');
+      show('Request sent! The seller will review it soon.', 'success');
       setShowRequestForm(false);
       setQuantity('1');
       setMessage('');
     } catch (error: any) {
       console.error('Error submitting request:', error);
-      window.alert('Failed to send request: ' + (error.message || 'Unknown error'));
+      show('Failed to send request', 'error');
     } finally {
       setSubmitting(false);
     }
