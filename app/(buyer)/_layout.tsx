@@ -20,7 +20,7 @@ export default function BuyerLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Sellers Near Me',
+          title: 'Near Me',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
           ),

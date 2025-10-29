@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import Colors from '@/constants/Colors';
 import { SellerWithDistance } from '@/types';
 import { formatDistance } from '@/utils/location';
+import React from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface SellerCardProps {
   seller: SellerWithDistance;
@@ -9,13 +10,29 @@ interface SellerCardProps {
 }
 
 export function SellerCard({ seller, onPress }: SellerCardProps) {
+  // Pick a stable autumn color per seller from a small palette
+  const autumnPalette = [
+    '#F4A460', // Sandy Brown
+    '#DAA520', // Goldenrod
+    '#DEB887', // Burlywood
+    '#D2691E', // Burnt Orange
+    '#FFA726', // Orange (light)
+    '#FFB74D', // Orange (soft)
+  ];
+  const key = (seller.id || seller.businessName || 'seller').toString();
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash << 5) - hash + key.charCodeAt(i);
+    hash |= 0;
+  }
+  const avatarBg = autumnPalette[Math.abs(hash) % autumnPalette.length];
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.avatarContainer}>
         {seller.avatar ? (
           <Image source={{ uri: seller.avatar }} style={styles.avatar} />
         ) : (
-          <View style={styles.avatarPlaceholder}>
+          <View style={[styles.avatarPlaceholder, { backgroundColor: avatarBg }]}>
             <Text style={styles.avatarText}>
               {seller.businessName.charAt(0).toUpperCase()}
             </Text>
@@ -79,7 +96,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#007AFF',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -109,7 +126,7 @@ const styles = StyleSheet.create({
   },
   distance: {
     fontSize: 14,
-    color: '#007AFF',
+    color: Colors.primary,
     marginRight: 12,
   },
   rating: {

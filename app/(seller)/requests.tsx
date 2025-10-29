@@ -8,6 +8,7 @@ import { getRequestsBySeller, updateRequestStatus } from '@/services/request.ser
 import { getSellerByUserId } from '@/services/seller.service';
 import { ProductRequest } from '@/types';
 import { formatPrice } from '@/utils/formatters';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -122,16 +123,16 @@ export default function RequestsScreen() {
     }
   };
 
-  const getStatusEmoji = (status: string) => {
+  const getStatusIconName = (status: string) => {
     switch (status) {
       case 'pending':
-        return '⏳';
+        return 'time-outline';
       case 'approved':
-        return '✅';
+        return 'checkmark-circle';
       case 'rejected':
-        return '❌';
+        return 'close-circle';
       default:
-        return '';
+        return 'ellipse-outline';
     }
   };
 
@@ -151,9 +152,12 @@ export default function RequestsScreen() {
             <Text style={styles.productName}>{item.productName}</Text>
           </View>
           <View style={styles.statusBadge}>
-            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-              {getStatusEmoji(item.status)} {item.status.toUpperCase()}
-            </Text>
+            <View style={styles.statusRow}>
+              <Ionicons name={getStatusIconName(item.status) as any} size={14} color={getStatusColor(item.status)} style={{ marginRight: 6 }} />
+              <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                {item.status.toUpperCase()}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -368,6 +372,10 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   requestDetails: {
     borderTopWidth: 1,

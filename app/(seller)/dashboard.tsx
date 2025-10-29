@@ -94,13 +94,13 @@ export default function SellerDashboard() {
           <Text style={[styles.statNumber, styles.successText]}>
             {inStockProducts}
           </Text>
-          <Text style={styles.statLabel}>In Stock</Text>
+          <Text style={styles.statLabelDark}>In Stock</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={[styles.statNumber, styles.warningText]}>
             {outOfStockProducts}
           </Text>
-          <Text style={styles.statLabel}>Out of Stock</Text>
+          <Text style={styles.statLabelDark}>Out of Stock</Text>
         </View>
       </View>
 
@@ -243,6 +243,11 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+  },
+  statLabelDark: {
+    fontSize: 12,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
   successText: {

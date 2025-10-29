@@ -8,9 +8,10 @@ import { Product } from '@/types';
 import { confirmAsync, showAlert } from '@/utils/dialogs';
 import { formatPrice } from '@/utils/formatters';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +24,8 @@ export default function SellerProductDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [updatingQty, setUpdatingQty] = useState(false);
   const [quantityInput, setQuantityInput] = useState<string>('');
+  const scrollRef = useRef<ScrollView>(null);
+  const [qtyInputY, setQtyInputY] = useState(0);
 
   useEffect(() => {
     loadProduct();
@@ -124,7 +127,11 @@ export default function SellerProductDetailScreen() {
           headerShown: true,
         }}
       />
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        ref={scrollRef}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Product Images */}
         {product.images && product.images.length > 0 ? (
           <ScrollView horizontal pagingEnabled style={styles.imageScroll}>
@@ -175,9 +182,12 @@ export default function SellerProductDetailScreen() {
               <Text style={styles.detailLabel}>Category:</Text>
               <Text style={styles.detailValue}>{product.category}</Text>
             </View>
-              <View style={styles.detailRowCentered}>
+            <View style={styles.detailRowCentered}>
               <Text style={styles.detailLabel}>Quantity:</Text>
-              <View style={styles.qtyEditorRow}>
+              <View
+                style={styles.qtyEditorRow}
+                onLayout={(e) => setQtyInputY(e.nativeEvent.layout.y)}
+              >
                 <Input
                   value={quantityInput}
                   onChangeText={setQuantityInput}
@@ -185,6 +195,13 @@ export default function SellerProductDetailScreen() {
                   keyboardType="number-pad"
                   style={styles.qtyInput}
                   containerStyle={styles.qtyInputContainer}
+                  onFocus={() => {
+                    if (Platform.OS === 'ios') {
+                      requestAnimationFrame(() => {
+                        scrollRef.current?.scrollTo({ y: Math.max(qtyInputY - 80, 0), animated: true });
+                      });
+                    }
+                  }}
                 />
                 <Button
                   title="Update"

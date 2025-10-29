@@ -255,6 +255,14 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginBottom: 12,
   },
+  badgeRow: {
+    backgroundColor: Colors.backgroundSecondary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   badge: {
     backgroundColor: Colors.backgroundSecondary,
     paddingHorizontal: 16,
