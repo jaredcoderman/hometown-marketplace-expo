@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserType } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -142,14 +143,17 @@ export default function SignupScreen() {
                 ]}
                 onPress={() => setUserType('buyer')}
               >
-                <Text
-                  style={[
-                    styles.userTypeButtonText,
-                    userType === 'buyer' && styles.userTypeButtonTextActive,
-                  ]}
-                >
-                  🛍️ Buy Products
-                </Text>
+                <View style={styles.userTypeContent}>
+                  <Ionicons name={userType === 'buyer' ? 'cart' : 'cart-outline'} size={18} color={userType === 'buyer' ? Colors.primary : Colors.textSecondary} style={{ marginRight: 8 }} />
+                  <Text
+                    style={[
+                      styles.userTypeButtonText,
+                      userType === 'buyer' && styles.userTypeButtonTextActive,
+                    ]}
+                  >
+                    Buy
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -159,14 +163,17 @@ export default function SignupScreen() {
                 ]}
                 onPress={() => setUserType('seller')}
               >
-                <Text
-                  style={[
-                    styles.userTypeButtonText,
-                    userType === 'seller' && styles.userTypeButtonTextActive,
-                  ]}
-                >
-                  🏪 Sell Products
-                </Text>
+                <View style={styles.userTypeContent}>
+                  <Ionicons name={userType === 'seller' ? 'storefront' : 'storefront-outline'} size={18} color={userType === 'seller' ? Colors.primary : Colors.textSecondary} style={{ marginRight: 8 }} />
+                  <Text
+                    style={[
+                      styles.userTypeButtonText,
+                      userType === 'seller' && styles.userTypeButtonTextActive,
+                    ]}
+                  >
+                    Sell
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -240,6 +247,10 @@ const styles = StyleSheet.create({
   userTypeButtons: {
     flexDirection: 'row',
     gap: 12,
+  },
+  userTypeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   userTypeButton: {
     flex: 1,

@@ -1,6 +1,9 @@
 import { Button } from '@/components/ui/button';
+import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
+import { confirmAsync, showAlert } from '@/utils/dialogs';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import {
@@ -10,7 +13,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import Colors from '@/constants/Colors';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -18,7 +20,7 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     console.log('Logout button clicked');
-    const confirmed = window.confirm('Are you sure you want to logout?');
+    const confirmed = await confirmAsync('Are you sure you want to logout?');
     if (confirmed) {
       try {
         console.log('Calling logout function...');
@@ -27,7 +29,7 @@ export default function ProfileScreen() {
         router.replace('/(auth)/login');
       } catch (error: any) {
         console.error('Logout error:', error);
-        window.alert('Failed to logout: ' + (error.message || 'Unknown error'));
+        showAlert('Failed to logout', error.message || 'Unknown error');
       }
     } else {
       console.log('Logout cancelled');
@@ -37,9 +39,9 @@ export default function ProfileScreen() {
   const handleUpdateLocation = async () => {
     try {
       await getCurrentLocation();
-      window.alert('Location updated successfully');
+      showAlert('Success', 'Location updated successfully');
     } catch (error: any) {
-      window.alert('Failed to update location: ' + (error.message || 'Unknown error'));
+      showAlert('Failed to update location', error.message || 'Unknown error');
     }
   };
 
@@ -53,8 +55,9 @@ export default function ProfileScreen() {
         </View>
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.email}>{user?.email}</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>👤 Buyer</Text>
+        <View style={styles.badgeRow}>
+          <Ionicons name="person" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
+          <Text style={styles.badgeText}>Buyer</Text>
         </View>
       </View>
 
@@ -146,6 +149,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+  },
+  badgeRow: {
+    backgroundColor: Colors.backgroundSecondary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   badgeText: {
     color: Colors.primary,

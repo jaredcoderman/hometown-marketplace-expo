@@ -1,10 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
 import { createSeller, getSellerByUserId, updateSeller } from '@/services/seller.service';
 import { Seller } from '@/types';
+import { confirmAsync, showAlert } from '@/utils/dialogs';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -15,7 +18,6 @@ import {
     Text,
     View,
 } from 'react-native';
-import Colors from '@/constants/Colors';
 
 export default function SellerProfileScreen() {
   const { user, logout } = useAuth();
@@ -69,7 +71,7 @@ export default function SellerProfileScreen() {
   const handleSave = async () => {
     if (!validate()) return;
     if (!user || !location) {
-      window.alert('User or location information missing');
+      showAlert('Missing Info', 'User or location information missing');
       return;
     }
 
@@ -88,7 +90,7 @@ export default function SellerProfileScreen() {
           categories: categoryArray,
           location,
         });
-        window.alert('Profile updated successfully!');
+        showAlert('Success', 'Profile updated successfully!');
       } else {
         // Create new seller
         await createSeller(user.id, {
@@ -98,14 +100,14 @@ export default function SellerProfileScreen() {
           categories: categoryArray,
           location,
         });
-        window.alert('Seller profile created successfully!');
+        showAlert('Success', 'Seller profile created successfully!');
         router.replace('/(seller)/dashboard');
       }
 
       await loadSellerProfile();
     } catch (error: any) {
       console.error('Error saving seller profile:', error);
-      window.alert('Error: ' + (error.message || 'Failed to save profile'));
+      showAlert('Error', error.message || 'Failed to save profile');
     } finally {
       setSaving(false);
     }
@@ -113,7 +115,7 @@ export default function SellerProfileScreen() {
 
   const handleLogout = async () => {
     console.log('Logout button clicked');
-    const confirmed = window.confirm('Are you sure you want to logout?');
+    const confirmed = await confirmAsync('Are you sure you want to logout?');
     if (confirmed) {
       try {
         console.log('Calling logout function...');
@@ -122,7 +124,7 @@ export default function SellerProfileScreen() {
         router.replace('/(auth)/login');
       } catch (error: any) {
         console.error('Logout error:', error);
-        window.alert('Failed to logout: ' + (error.message || 'Unknown error'));
+        showAlert('Failed to logout', error.message || 'Unknown error');
       }
     } else {
       console.log('Logout cancelled');
@@ -150,8 +152,9 @@ export default function SellerProfileScreen() {
           </View>
           <Text style={styles.name}>{user?.name}</Text>
           <Text style={styles.email}>{user?.email}</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>🏪 Seller</Text>
+          <View style={styles.badgeRow}>
+            <Ionicons name="storefront-outline" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
+            <Text style={styles.badgeText}>Seller</Text>
           </View>
         </View>
 

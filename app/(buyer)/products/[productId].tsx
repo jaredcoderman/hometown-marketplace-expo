@@ -8,11 +8,13 @@ import { getProduct } from '@/services/product.service';
 import { getSeller } from '@/services/seller.service';
 import { Product, Seller } from '@/types';
 import { formatPrice } from '@/utils/formatters';
+import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     Dimensions,
     Image,
+    Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -38,6 +40,10 @@ export default function ProductDetailScreen() {
     if (!productId) return;
 
     try {
+      // Ensure we don't flash previous product/seller content when switching
+      setLoading(true);
+      setProduct(null);
+      setSeller(null);
       const productData = await getProduct(productId);
       setProduct(productData);
 
@@ -126,6 +132,20 @@ export default function ProductDetailScreen() {
         options={{
           title: product.name,
           headerShown: true,
+          headerLeft: () => (
+            <Pressable
+              onPress={() => {
+                if (seller?.id) {
+                  router.replace(`/(buyer)/sellers/${seller.id}`);
+                } else {
+                  router.back();
+                }
+              }}
+              style={{ paddingHorizontal: 8, paddingVertical: 8 }}
+            >
+              <Ionicons name="chevron-back" size={26} color="#333" />
+            </Pressable>
+          ),
         }}
       />
       <ScrollView style={styles.container}>
@@ -187,7 +207,10 @@ export default function ProductDetailScreen() {
           {/* Seller Info */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Seller</Text>
-            <View style={styles.sellerCard}>
+            <Pressable
+              onPress={() => seller && router.replace(`/(buyer)/sellers/${seller.id}`)}
+              style={styles.sellerCard}
+            >
               <View style={styles.sellerAvatar}>
                 {seller.avatar ? (
                   <Image source={{ uri: seller.avatar }} style={styles.sellerAvatarImage} />
@@ -205,7 +228,7 @@ export default function ProductDetailScreen() {
                   </Text>
                 )}
               </View>
-            </View>
+            </Pressable>
           </View>
 
           {/* Contact Button */}

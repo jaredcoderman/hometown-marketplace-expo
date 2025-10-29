@@ -1,21 +1,20 @@
+import { SellerCard } from '@/components/sellers/seller-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from '@/contexts/LocationContext';
+import { getNearbySellers } from '@/services/seller.service';
+import { SellerWithDistance } from '@/types';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  RefreshControl,
-  Alert,
+    Alert,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { useLocation } from '@/contexts/LocationContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { SellerWithDistance } from '@/types';
-import { getNearbySellers } from '@/services/seller.service';
-import { SellerCard } from '@/components/sellers/seller-card';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Button } from '@/components/ui/button';
 
 export default function BuyerDashboard() {
   const { location, radiusMiles, getCurrentLocation } = useLocation();
@@ -74,13 +73,13 @@ export default function BuyerDashboard() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello, {user?.name}! 👋</Text>
-          <Text style={styles.location}>
-            📍 {location.city}, {location.state}
-          </Text>
+        <View style={styles.locationRow}>
+          <Text style={styles.locationPin}>📍</Text>
+          <Text style={styles.location}>{location.city}, {location.state}</Text>
         </View>
-        <Text style={styles.radius}>Within {radiusMiles} miles</Text>
+        <View style={styles.radiusChip}>
+          <Text style={styles.radiusText}>Within {radiusMiles} miles</Text>
+        </View>
       </View>
 
       {sellers.length === 0 ? (
@@ -125,20 +124,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  greeting: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationPin: {
+    fontSize: 16,
+    marginRight: 6,
   },
   location: {
-    fontSize: 14,
-    color: '#666',
-  },
-  radius: {
-    fontSize: 14,
-    color: '#007AFF',
+    fontSize: 16,
+    color: '#333',
     fontWeight: '500',
+  },
+  radiusChip: {
+    backgroundColor: '#F2F2F2',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  radiusText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '600',
   },
   list: {
     padding: 16,

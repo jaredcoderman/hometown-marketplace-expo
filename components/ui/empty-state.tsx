@@ -4,6 +4,7 @@ import { Button } from './button';
 
 interface EmptyStateProps {
   icon?: string;
+  iconNode?: React.ReactNode;
   title: string;
   description?: string;
   actionLabel?: string;
@@ -12,6 +13,7 @@ interface EmptyStateProps {
 
 export function EmptyState({
   icon,
+  iconNode,
   title,
   description,
   actionLabel,
@@ -19,7 +21,11 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      {icon && <Text style={styles.icon}>{icon}</Text>}
+      {iconNode ? (
+        <View style={styles.iconNode}>{iconNode}</View>
+      ) : (
+        icon && <Text style={styles.iconText}>{icon}</Text>
+      )}
       <Text style={styles.title}>{title}</Text>
       {description && <Text style={styles.description}>{description}</Text>}
       {actionLabel && onAction && (
@@ -40,7 +46,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 40,
   },
-  icon: {
+  iconNode: {
+    marginBottom: 16,
+  },
+  iconText: {
     fontSize: 64,
     marginBottom: 16,
   },

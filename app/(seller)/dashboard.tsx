@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getProductsBySeller } from '@/services/product.service';
 import { getSellerByUserId } from '@/services/seller.service';
 import { Product, Seller } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -111,7 +112,7 @@ export default function SellerDashboard() {
           onPress={() => router.push('/(seller)/products/create')}
         >
           <View style={styles.actionIcon}>
-            <Text style={styles.actionIconText}>➕</Text>
+            <Ionicons name="add" size={24} color={Colors.primary} />
           </View>
           <View style={styles.actionContent}>
             <Text style={styles.actionTitle}>Add New Product</Text>
@@ -127,7 +128,7 @@ export default function SellerDashboard() {
           onPress={() => router.push('/(seller)/products')}
         >
           <View style={styles.actionIcon}>
-            <Text style={styles.actionIconText}>📦</Text>
+            <Ionicons name="cube-outline" size={22} color={Colors.primary} />
           </View>
           <View style={styles.actionContent}>
             <Text style={styles.actionTitle}>Manage Products</Text>
@@ -143,7 +144,7 @@ export default function SellerDashboard() {
           onPress={() => router.push('/(seller)/profile')}
         >
           <View style={styles.actionIcon}>
-            <Text style={styles.actionIconText}>⚙️</Text>
+            <Ionicons name="settings-outline" size={22} color={Colors.primary} />
           </View>
           <View style={styles.actionContent}>
             <Text style={styles.actionTitle}>Edit Profile</Text>

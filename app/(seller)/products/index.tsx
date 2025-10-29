@@ -94,11 +94,13 @@ export default function ProductsListScreen() {
           <FlatList
             data={products}
             renderItem={({ item }) => (
-              <ProductCard
-                product={item}
-                onPress={() => handleProductPress(item.id)}
-                showStatus
-              />
+              <View style={styles.gridItem}>
+                <ProductCard
+                  product={item}
+                  onPress={() => handleProductPress(item.id)}
+                  showStatus
+                />
+              </View>
             )}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
@@ -124,6 +126,10 @@ const styles = StyleSheet.create({
   },
   row: {
     justifyContent: 'space-between',
+  },
+  gridItem: {
+    width: '48%',
+    marginBottom: 16,
   },
   addButton: {
     marginRight: 16,

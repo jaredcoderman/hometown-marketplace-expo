@@ -3,11 +3,12 @@ import AppColors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRequestsBySeller } from '@/services/request.service';
 import { getSellerByUserId } from '@/services/seller.service';
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
-function RequestsIconWithBadge() {
+function RequestsIconWithBadge({ color }: { color: string }) {
   const { user } = useAuth();
   const [count, setCount] = useState(0);
 
@@ -29,9 +30,27 @@ function RequestsIconWithBadge() {
   }, [user]);
 
   return (
-    <Text style={{ fontSize: 24 }}>
-      {count > 0 ? '📋' : '📋'}
-    </Text>
+    <View style={{ width: 26, height: 26 }}>
+      <Ionicons name="clipboard-outline" size={22} color={color} />
+      {count > 0 && (
+        <View
+          style={{
+            position: 'absolute',
+            right: -2,
+            top: -2,
+            backgroundColor: AppColors.primary,
+            borderRadius: 8,
+            minWidth: 14,
+            height: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 2,
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{count}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -52,8 +71,8 @@ export default function SellerLayout() {
         name="dashboard"
         options={{
           title: 'Dashboard',
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 24 }}>📊</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'speedometer' : 'speedometer-outline'} size={22} color={color} />
           ),
         }}
       />
@@ -62,8 +81,8 @@ export default function SellerLayout() {
         options={{
           title: 'Products',
           href: '/products',
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 24 }}>📦</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'cube' : 'cube-outline'} size={22} color={color} />
           ),
         }}
       />
@@ -71,15 +90,15 @@ export default function SellerLayout() {
         name="requests"
         options={{
           title: 'Requests',
-          tabBarIcon: () => <RequestsIconWithBadge />,
+          tabBarIcon: ({ color }) => <RequestsIconWithBadge color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 24 }}>👤</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} />
           ),
         }}
       />

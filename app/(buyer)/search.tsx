@@ -12,6 +12,7 @@ import { getAllProducts } from '@/services/product.service';
 import { ProductCard } from '@/components/products/product-card';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,13 +63,13 @@ export default function SearchScreen() {
         <LoadingSpinner message="Searching..." />
       ) : searched && products.length === 0 ? (
         <EmptyState
-          icon="🔍"
+          iconNode={<Ionicons name="search-outline" size={56} color="#999" />}
           title="No Results"
           description={`No products found for "${searchQuery}"`}
         />
       ) : !searched ? (
         <EmptyState
-          icon="🔍"
+          iconNode={<Ionicons name="search-outline" size={56} color="#999" />}
           title="Search Products"
           description="Start typing to search for products from local sellers"
         />

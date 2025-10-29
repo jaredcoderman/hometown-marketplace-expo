@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createProduct } from '@/services/product.service';
 import { getSellerByUserId } from '@/services/seller.service';
 import { pickMultipleImages, uploadProductImages } from '@/services/storage.service';
+import { confirmAsync, showAlert } from '@/utils/dialogs';
+import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -34,7 +36,7 @@ export default function CreateProductScreen() {
       const uris = await pickMultipleImages();
       setImageUris([...imageUris, ...uris]);
     } catch (error: any) {
-      window.alert('Failed to pick images: ' + (error.message || 'Unknown error'));
+      showAlert('Failed to pick images', error.message || 'Unknown error');
     }
   };
 
@@ -65,7 +67,7 @@ export default function CreateProductScreen() {
       // Get seller info
       const seller = await getSellerByUserId(user.id);
       if (!seller) {
-        window.alert('Seller profile not found. Please complete your profile first.');
+        showAlert('Profile Required', 'Seller profile not found. Please complete your profile first.');
         router.push('/(seller)/profile');
         return;
       }
@@ -103,7 +105,7 @@ export default function CreateProductScreen() {
       setErrors({});
       
       // Show success message and ask what to do next
-      const viewProduct = window.confirm('Product created successfully! Would you like to view it now?\n\nClick OK to view the product, or Cancel to create another.');
+      const viewProduct = await confirmAsync('Product created successfully! Would you like to view it now?');
       
       if (viewProduct) {
         router.push(`/(seller)/products/${productId}`);
@@ -111,7 +113,7 @@ export default function CreateProductScreen() {
       // Otherwise stay on the page with cleared fields to create another product
     } catch (error: any) {
       console.error('Error creating product:', error);
-      window.alert('Failed to create product: ' + (error.message || 'Unknown error'));
+      showAlert('Failed to create product', error.message || 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -187,7 +189,7 @@ export default function CreateProductScreen() {
                 style={styles.imagePicker}
                 onPress={handlePickImages}
               >
-                <Text style={styles.imagePickerIcon}>📷</Text>
+                <Ionicons name="image-outline" size={32} color={Colors.textSecondary} style={{ marginBottom: 8 }} />
                 <Text style={styles.imagePickerText}>Add Images</Text>
               </TouchableOpacity>
 

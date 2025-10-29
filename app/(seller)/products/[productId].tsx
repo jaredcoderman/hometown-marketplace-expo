@@ -1,24 +1,28 @@
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Colors from '@/constants/Colors';
 import { deleteProduct, getProduct, toggleProductStock } from '@/services/product.service';
 import { Product } from '@/types';
+import { confirmAsync, showAlert } from '@/utils/dialogs';
 import { formatPrice } from '@/utils/formatters';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 
 export default function SellerProductDetailScreen() {
   const { productId } = useLocalSearchParams<{ productId: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updatingQty, setUpdatingQty] = useState(false);
+  const [quantityInput, setQuantityInput] = useState<string>('');
 
   useEffect(() => {
     loadProduct();
@@ -30,9 +34,12 @@ export default function SellerProductDetailScreen() {
     try {
       const productData = await getProduct(productId);
       setProduct(productData);
+      setQuantityInput(
+        typeof productData.quantity === 'number' ? String(productData.quantity) : ''
+      );
     } catch (error: any) {
       console.error('Error loading product:', error);
-      window.alert('Failed to load product: ' + (error.message || 'Unknown error'));
+      showAlert('Failed to load product', error.message || 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -45,10 +52,30 @@ export default function SellerProductDetailScreen() {
       console.log('Toggling stock status...');
       await toggleProductStock(product.id, !product.inStock);
       setProduct({ ...product, inStock: !product.inStock });
-      window.alert(`Product marked as ${!product.inStock ? 'in stock' : 'out of stock'}`);
+      showAlert('Success', `Product marked as ${!product.inStock ? 'in stock' : 'out of stock'}`);
     } catch (error: any) {
       console.error('Error updating stock:', error);
-      window.alert('Failed to update stock status: ' + (error.message || 'Unknown error'));
+      showAlert('Failed to update stock status', error.message || 'Unknown error');
+    }
+  };
+
+  const handleUpdateQuantity = async () => {
+    if (!product) return;
+    const parsed = parseInt(quantityInput, 10);
+    if (isNaN(parsed) || parsed < 0) {
+      showAlert('Invalid quantity', 'Please enter a non-negative whole number.');
+      return;
+    }
+    setUpdatingQty(true);
+    try {
+      const { updateProduct } = await import('@/services/product.service');
+      await updateProduct(product.id, { quantity: parsed, inStock: parsed > 0 });
+      setProduct({ ...product, quantity: parsed, inStock: parsed > 0 });
+      showAlert('Success', 'Quantity updated');
+    } catch (error: any) {
+      showAlert('Failed to update quantity', error.message || 'Unknown error');
+    } finally {
+      setUpdatingQty(false);
     }
   };
 
@@ -56,7 +83,7 @@ export default function SellerProductDetailScreen() {
     if (!product) return;
 
     console.log('Delete button clicked for product:', product.id);
-    const confirmed = window.confirm('Are you sure you want to delete this product? This action cannot be undone.');
+    const confirmed = await confirmAsync('Are you sure you want to delete this product? This action cannot be undone.');
     
     if (confirmed) {
       try {
@@ -67,7 +94,7 @@ export default function SellerProductDetailScreen() {
         router.back();
       } catch (error: any) {
         console.error('Error deleting product:', error);
-        window.alert('Failed to delete product: ' + (error.message || 'Unknown error'));
+        showAlert('Failed to delete product', error.message || 'Unknown error');
       }
     } else {
       console.log('Delete cancelled');
@@ -148,12 +175,25 @@ export default function SellerProductDetailScreen() {
               <Text style={styles.detailLabel}>Category:</Text>
               <Text style={styles.detailValue}>{product.category}</Text>
             </View>
-            {product.quantity !== undefined && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Quantity:</Text>
-                <Text style={styles.detailValue}>{product.quantity}</Text>
+              <View style={styles.detailRowCentered}>
+              <Text style={styles.detailLabel}>Quantity:</Text>
+              <View style={styles.qtyEditorRow}>
+                <Input
+                  value={quantityInput}
+                  onChangeText={setQuantityInput}
+                  placeholder="0"
+                  keyboardType="number-pad"
+                  style={styles.qtyInput}
+                  containerStyle={styles.qtyInputContainer}
+                />
+                <Button
+                  title="Update"
+                  onPress={handleUpdateQuantity}
+                  loading={updatingQty}
+                  style={styles.qtyUpdateButton}
+                />
               </View>
-            )}
+            </View>
           </View>
 
           {/* Actions */}
@@ -266,6 +306,25 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontWeight: '500',
     flex: 1,
+  },
+  detailRowCentered: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  qtyEditorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  qtyInput: {
+    width: 55,
+    marginRight: 8,
+  },
+  qtyInputContainer: {
+    marginBottom: 0,
+  },
+  qtyUpdateButton: {
+    paddingVertical: 10,
   },
   actions: {
     marginTop: 16,

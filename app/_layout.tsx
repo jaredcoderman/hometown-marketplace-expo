@@ -1,12 +1,12 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Image } from 'react-native';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import Colors from '@/constants/Colors';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LocationProvider } from '@/contexts/LocationContext';
-import Colors from '@/constants/Colors';
 
 // Custom autumn theme
 const AutumnTheme = {
@@ -26,7 +26,18 @@ export default function RootLayout() {
     <AuthProvider>
       <LocationProvider>
         <ThemeProvider value={AutumnTheme}>
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack
+            screenOptions={{
+              headerShown: true,
+              headerTitleAlign: 'center',
+              headerTitle: () => (
+                <Image
+                  source={require('@/assets/images/hometown-logo.png')}
+                  style={{ height: 36, width: 36, resizeMode: 'contain' }}
+                />
+              ),
+            }}
+          >
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(buyer)" />

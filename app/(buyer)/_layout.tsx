@@ -1,8 +1,8 @@
 import { HapticTab } from '@/components/haptic-tab';
 import AppColors from '@/constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Text } from 'react-native';
 
 export default function BuyerLayout() {
   return (
@@ -20,9 +20,9 @@ export default function BuyerLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Nearby Sellers',
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 24 }}>🏠</Text>
+          title: 'Sellers Near Me',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
           ),
         }}
       />
@@ -30,8 +30,8 @@ export default function BuyerLayout() {
         name="search"
         options={{
           title: 'Search',
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 24 }}>🔍</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} size={22} color={color} />
           ),
         }}
       />
@@ -39,8 +39,8 @@ export default function BuyerLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 24 }}>👤</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} />
           ),
         }}
       />

@@ -4,11 +4,12 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { getProductsBySeller } from '@/services/product.service';
 import { getSeller } from '@/services/seller.service';
 import { Product, Seller } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
     Image,
+    Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -29,6 +30,10 @@ export default function SellerDetailScreen() {
     if (!sellerId) return;
 
     try {
+      // Ensure we don't flash previous seller content
+      setLoading(true);
+      setSeller(null);
+      setProducts([]);
       const [sellerData, productsData] = await Promise.all([
         getSeller(sellerId),
         getProductsBySeller(sellerId),
@@ -37,7 +42,9 @@ export default function SellerDetailScreen() {
       setProducts(productsData);
     } catch (error: any) {
       console.error('Error loading seller data:', error);
-      Alert.alert('Error', 'Failed to load seller information');
+      if (typeof window !== 'undefined') {
+        window.alert('Failed to load seller information');
+      }
     } finally {
       setLoading(false);
     }
@@ -69,6 +76,11 @@ export default function SellerDetailScreen() {
         options={{
           title: seller.businessName,
           headerShown: true,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} style={{ paddingHorizontal: 8, paddingVertical: 8 }}>
+              <Ionicons name="chevron-back" size={26} color="#333" />
+            </Pressable>
+          ),
         }}
       />
       <ScrollView style={styles.container}>
