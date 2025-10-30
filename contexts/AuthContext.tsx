@@ -1,14 +1,13 @@
-import { auth } from '@/config/firebase';
 import { useLocation } from '@/contexts/LocationContext';
 import { createUser, getUser } from '@/services/user.service';
 import { LoginData, SignupData, User } from '@/types';
 import { prefetchBuyerHomeAssets } from '@/utils/prefetch';
+import type { Auth as FirebaseAuthType } from 'firebase/auth';
 import {
-    User as FirebaseUser,
-    createUserWithEmailAndPassword,
-    signOut as firebaseSignOut,
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
+  User as FirebaseUser,
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut, getAuth, onAuthStateChanged,
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -25,6 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const authInstance = getAuth() as FirebaseAuthType;
   const [user, setUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,30 +37,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   } catch {}
 
   useEffect(() => {
-    console.log('=== Setting up auth state listener ===');
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('Auth state changed. Firebase user:', firebaseUser?.email || 'null');
+    const unsubscribe = onAuthStateChanged(authInstance, async (firebaseUser) => {
+      
       setFirebaseUser(firebaseUser);
       
       if (firebaseUser) {
         try {
-          console.log('Fetching user data for:', firebaseUser.uid);
           let userData = await getUser(firebaseUser.uid);
-          console.log('User data retrieved:', {
-            id: userData.id,
-            email: userData.email,
-            name: userData.name,
-            userType: userData.userType
-          });
+          
           setUser(userData);
           // Warm up buyer assets once we have the user
           if (userData.userType === 'buyer') {
-            const loc = locationCtx?.location;
+            const loc = locationCtx?.location ?? undefined;
             const radius = locationCtx?.radiusMiles;
             prefetchBuyerHomeAssets({ location: loc, radiusMiles: radius });
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
           // Auto-create a minimal user profile if missing (e.g., user pre-existed before rules)
           try {
             const inferredName = firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User');
@@ -75,16 +67,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const created = await getUser(firebaseUser.uid);
             setUser(created);
           } catch (e) {
-            console.error('Failed to auto-create user profile:', e);
             setUser(null);
           }
         }
       } else {
-        console.log('No firebase user, clearing state');
         setUser(null);
       }
       
-      console.log('Setting loading to false');
       setLoading(false);
     });
 
@@ -94,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (data: SignupData) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(
-        auth,
+        authInstance,
         data.email,
         data.password
       );
@@ -114,40 +103,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = await getUser(userCredential.user.uid);
       setUser(userData);
     } catch (error: any) {
-      console.error('Signup error:', error);
       throw new Error(error.message || 'Failed to create account');
     }
   };
 
   const login = async (data: LoginData) => {
-    console.log('=== AuthContext login function called ===');
-    console.log('Attempting to sign in with email:', data.email);
     try {
-      const result = await signInWithEmailAndPassword(auth, data.email, data.password);
-      console.log('signInWithEmailAndPassword successful!', result.user.email);
+      await signInWithEmailAndPassword(authInstance, data.email, data.password);
       // User state will be updated by onAuthStateChanged
     } catch (error: any) {
-      console.error('=== Login error in AuthContext ===');
-      console.error('Error:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
       throw new Error(error.message || 'Failed to login');
     }
   };
 
   const logout = async () => {
-    console.log('=== Logout function called in AuthContext ===');
     try {
-      console.log('Calling firebaseSignOut...');
-      await firebaseSignOut(auth);
-      console.log('firebaseSignOut successful');
+      await firebaseSignOut(authInstance);
       setUser(null);
       setFirebaseUser(null);
-      console.log('User state cleared');
     } catch (error: any) {
-      console.error('=== Logout error ===');
-      console.error('Error:', error);
-      console.error('Error message:', error.message);
       throw new Error(error.message || 'Failed to logout');
     }
   };
@@ -158,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await getUser(firebaseUser.uid);
         setUser(userData);
       } catch (error) {
-        console.error('Error refreshing user data:', error);
+        // ignore
       }
     }
   };
