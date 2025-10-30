@@ -1,6 +1,8 @@
 import { auth } from '@/config/firebase';
+import { useLocation } from '@/contexts/LocationContext';
 import { createUser, getUser } from '@/services/user.service';
 import { LoginData, SignupData, User } from '@/types';
+import { prefetchBuyerHomeAssets } from '@/utils/prefetch';
 import {
     User as FirebaseUser,
     createUserWithEmailAndPassword,
@@ -9,8 +11,6 @@ import {
     signInWithEmailAndPassword,
 } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { prefetchBuyerHomeAssets } from '@/utils/prefetch';
-import { useLocation } from '@/contexts/LocationContext';
 
 interface AuthContextType {
   user: User | null;
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         try {
           console.log('Fetching user data for:', firebaseUser.uid);
-          const userData = await getUser(firebaseUser.uid);
+          let userData = await getUser(firebaseUser.uid);
           console.log('User data retrieved:', {
             id: userData.id,
             email: userData.email,
@@ -61,7 +61,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
-          setUser(null);
+          // Auto-create a minimal user profile if missing (e.g., user pre-existed before rules)
+          try {
+            const inferredName = firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User');
+            const newUser: Omit<User, 'id'> = {
+              email: firebaseUser.email || '',
+              name: inferredName,
+              userType: 'buyer',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+            await createUser(firebaseUser.uid, newUser);
+            const created = await getUser(firebaseUser.uid);
+            setUser(created);
+          } catch (e) {
+            console.error('Failed to auto-create user profile:', e);
+            setUser(null);
+          }
         }
       } else {
         console.log('No firebase user, clearing state');

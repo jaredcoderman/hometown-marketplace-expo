@@ -6,6 +6,7 @@ import {
     doc,
     getDoc,
     getDocs,
+    onSnapshot,
     query,
     serverTimestamp,
     updateDoc,
@@ -100,6 +101,24 @@ export async function updateRequestStatus(
   await updateDoc(docRef, {
     status,
     updatedAt: serverTimestamp(),
+  });
+}
+
+// Subscribe to real-time updates for buyer requests
+export function subscribeToBuyerRequests(
+  buyerId: string,
+  onUpdate: (requests: ProductRequest[]) => void
+): () => void {
+  const q = query(
+    collection(db, REQUESTS_COLLECTION),
+    where('buyerId', '==', buyerId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const requests = snapshot.docs.map(docToRequest);
+    // Sort by createdAt descending (newest first)
+    requests.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    onUpdate(requests);
   });
 }
 

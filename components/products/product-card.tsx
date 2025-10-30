@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heartText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#666',
   },
   heartActive: {
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   heartCount: {
     marginLeft: 6,
-    fontSize: 12,
+    fontSize: 14,
     color: '#555',
     fontWeight: '600',
   },

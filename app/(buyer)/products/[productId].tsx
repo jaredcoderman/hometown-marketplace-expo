@@ -214,10 +214,10 @@ export default function ProductDetailScreen() {
         {/* Product Info */}
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.name}>{product.name}</Text>
-            <Text style={styles.price}>{formatPrice(product.price)}</Text>
+            <Text style={styles.name} numberOfLines={2}>{product.name}</Text>
             <Text style={styles.favCount}>❤️ {favoritesCount}</Text>
           </View>
+          <Text style={styles.price}>{formatPrice(product.price)}</Text>
 
           {!product.inStock && (
             <View style={styles.outOfStockBanner}>
@@ -367,25 +367,26 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 8,
   },
   name: {
     fontSize: 28,
     fontWeight: '700',
     color: Colors.text,
-    marginBottom: 8,
+    flex: 1,
+    marginRight: 12,
   },
   price: {
     fontSize: 32,
     fontWeight: '700',
     color: Colors.primary,
+    marginBottom: 16,
   },
   favCount: {
-    marginLeft: 12,
-    fontSize: 14,
+    fontSize: 18,
     color: Colors.textSecondary,
     fontWeight: '600',
   },

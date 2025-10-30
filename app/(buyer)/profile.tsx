@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
 import { useToast } from '@/contexts/ToastContext';
-import { confirmAsync } from '@/utils/dialogs';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -19,18 +19,10 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { location, getCurrentLocation } = useLocation();
   const { show } = useToast();
+  const [confirmLogoutVisible, setConfirmLogoutVisible] = useState(false);
 
-  const handleLogout = async () => {
-    const confirmed = await confirmAsync('Are you sure you want to logout?');
-    if (confirmed) {
-      try {
-        await logout();
-        router.replace('/(auth)/login');
-      } catch (error: any) {
-        console.error('Logout error:', error);
-        show('Failed to logout', 'error');
-      }
-    }
+  const handleLogout = () => {
+    setConfirmLogoutVisible(true);
   };
 
   const handleUpdateLocation = async () => {
@@ -100,6 +92,23 @@ export default function ProfileScreen() {
           variant="danger"
         />
       </View>
+      <ConfirmModal
+        visible={confirmLogoutVisible}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        onCancel={() => setConfirmLogoutVisible(false)}
+        onConfirm={async () => {
+          setConfirmLogoutVisible(false);
+          try {
+            await logout();
+            router.replace('/(auth)/login');
+          } catch (error: any) {
+            show('Failed to logout', 'error');
+          }
+        }}
+      />
     </ScrollView>
   );
 }

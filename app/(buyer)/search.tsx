@@ -38,8 +38,66 @@ export default function SearchScreen() {
     loadFavs();
   }, [user?.id]);
 
+  useEffect(() => {
+    async function loadFavoritesProducts() {
+      if (!onlyFavorites || !user?.id || favoriteIds.size === 0) {
+        if (!onlyFavorites) return;
+        // If favorites is on but no favorites, show empty state
+        if (onlyFavorites) {
+          setProducts([]);
+          setSearched(true);
+        }
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        const { getProduct } = await import('@/services/product.service');
+        const favoriteProductIds = Array.from(favoriteIds);
+        const favoriteProducts = await Promise.all(
+          favoriteProductIds.map(async (id) => {
+            try {
+              return await getProduct(id);
+            } catch {
+              return null;
+            }
+          })
+        );
+        const validProducts = favoriteProducts.filter((p): p is Product => p !== null);
+        setProducts(validProducts);
+        setSearched(true);
+
+        // Load counts and seller names
+        const counts = await Promise.all(
+          validProducts.map(async (p) => [p.id, await getFavoritesCount(p.id)] as const)
+        );
+        setFavoriteCounts(Object.fromEntries(counts));
+
+        const uniqueSellerIds = Array.from(new Set(validProducts.map((p) => p.sellerId)));
+        const sellerPairs = await Promise.all(
+          uniqueSellerIds.map(async (id) => {
+            try { const s = await getSeller(id); return [id, s.businessName] as const; }
+            catch { return [id, ''] as const; }
+          })
+        );
+        setSellerNamesById((prev) => ({ ...prev, ...Object.fromEntries(sellerPairs) }));
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadFavoritesProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlyFavorites, user?.id]);
+
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
+    
+    // Don't search if favorites toggle is on
+    if (onlyFavorites) {
+      return;
+    }
     
     if (query.length < 2) {
       setProducts([]);
@@ -91,21 +149,37 @@ export default function SearchScreen() {
           clearButtonMode="while-editing"
         />
         <View style={styles.filterRow}>
-          <Switch value={onlyFavorites} onValueChange={setOnlyFavorites} />
+          <Switch 
+            value={onlyFavorites} 
+            onValueChange={(value) => {
+              setOnlyFavorites(value);
+              if (!value) {
+                // Clear products when turning off favorites
+                setProducts([]);
+                setSearched(false);
+              }
+            }} 
+          />
           <View style={{ width: 8 }} />
           <TextInput editable={false} value={onlyFavorites ? 'Only favorites' : 'All results'} style={styles.fakeLabel} />
         </View>
       </View>
 
       {loading ? (
-        <LoadingSpinner message="Searching..." />
+        <LoadingSpinner message={onlyFavorites ? "Loading favorites..." : "Searching..."} />
+      ) : onlyFavorites && products.length === 0 && searched ? (
+        <EmptyState
+          iconNode={<Ionicons name="heart-outline" size={56} color="#999" />}
+          title="No Favorites"
+          description="You haven't favorited any products yet. Start browsing and heart products you like!"
+        />
       ) : searched && products.length === 0 ? (
         <EmptyState
           iconNode={<Ionicons name="search-outline" size={56} color="#999" />}
           title="No Results"
           description={`No products found for "${searchQuery}"`}
         />
-      ) : !searched ? (
+      ) : !searched && !onlyFavorites ? (
         <EmptyState
           iconNode={<Ionicons name="search-outline" size={56} color="#999" />}
           title="Search Products"
@@ -113,7 +187,7 @@ export default function SearchScreen() {
         />
       ) : (
         <FlatList
-          data={products.filter((p) => !onlyFavorites || favoriteIds.has(p.id))}
+          data={products}
           renderItem={({ item }) => (
             <View style={styles.gridItem}>
               <ProductCard
@@ -133,6 +207,16 @@ export default function SearchScreen() {
                     ...prev,
                     [item.id]: Math.max(0, (prev[item.id] ?? 0) + (nowFav ? 1 : -1)),
                   }));
+                  // If in favorites-only mode, update the products list
+                  if (onlyFavorites) {
+                    if (nowFav) {
+                      // Product is already in the list (item), so no need to add
+                      // Just ensure it's marked as favorite
+                    } else {
+                      // Remove product from list when unfavorited
+                      setProducts((prev) => prev.filter(p => p.id !== item.id));
+                    }
+                  }
                 }}
               />
               {sellerNamesById[item.sellerId] ? (

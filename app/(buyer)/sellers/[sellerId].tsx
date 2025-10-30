@@ -11,12 +11,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 
 export default function SellerDetailScreen() {
@@ -203,10 +203,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#EEE',
+    // Ensure overlapping avatar is not clipped on web
+    overflow: 'visible',
   },
   avatarContainer: {
-    marginTop: -40,
+    marginTop: -10,
     marginBottom: 16,
+    zIndex: 2,
   },
   avatar: {
     width: 80,
