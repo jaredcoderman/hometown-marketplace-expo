@@ -109,3 +109,11 @@ export interface ProductRequest {
   updatedAt: Date;
 }
 
+// Favorites
+export interface FavoriteProduct {
+  id: string; // doc id (productId)
+  productId: string;
+  buyerId: string;
+  createdAt: Date;
+}
+

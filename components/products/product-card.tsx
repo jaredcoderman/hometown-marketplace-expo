@@ -1,8 +1,9 @@
+import { LazyImage } from '@/components/ui/lazy-image';
 import Colors from '@/constants/Colors';
 import { Product } from '@/types';
 import { formatPrice } from '@/utils/formatters';
 import React from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; // kept for reference; card now uses responsive width
@@ -12,6 +13,9 @@ interface ProductCardProps {
   onPress: () => void;
   showStatus?: boolean;
   fullWidth?: boolean; // when true, card stretches to parent width (used in buyer seller page)
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+  favoritesCount?: number;
 }
 
 export function ProductCard({
@@ -19,16 +23,15 @@ export function ProductCard({
   onPress,
   showStatus = false,
   fullWidth = false,
+  isFavorite,
+  onToggleFavorite,
+  favoritesCount,
 }: ProductCardProps) {
   return (
     <TouchableOpacity style={[styles.card]} onPress={onPress} activeOpacity={0.7}>
       <View style={[styles.imageContainer]}>
         {product.images && product.images.length > 0 ? (
-          <Image
-            source={{ uri: product.images[0] }}
-            style={styles.image}
-            resizeMode="cover"
-          />
+          <LazyImage uri={product.images[0]} style={styles.image} />
         ) : (
           <View style={styles.imagePlaceholder}>
             {product.emoji ? (
@@ -42,6 +45,14 @@ export function ProductCard({
           <View style={styles.qtyBadge}>
             <Text style={styles.qtyText}>Qty: {product.quantity}</Text>
           </View>
+        )}
+        {onToggleFavorite && (
+          <TouchableOpacity style={styles.heartButton} onPress={(e) => { e.stopPropagation(); onToggleFavorite(); }}>
+            <Text style={[styles.heartText, isFavorite ? styles.heartActive : undefined]}>{isFavorite ? '♥' : '♡'}</Text>
+            {typeof favoritesCount === 'number' && (
+              <Text style={styles.heartCount}>{favoritesCount}</Text>
+            )}
+          </TouchableOpacity>
         )}
         {!product.inStock && (
           <View style={styles.outOfStockBadge}>
@@ -121,6 +132,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+  },
+  heartButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heartText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  heartActive: {
+    color: '#d9534f',
+  },
+  heartCount: {
+    marginLeft: 6,
+    fontSize: 12,
+    color: '#555',
+    fontWeight: '600',
   },
   qtyText: {
     fontSize: 12,

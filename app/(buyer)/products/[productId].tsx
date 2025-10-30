@@ -5,6 +5,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { getFavoritesCount, isProductFavorited, toggleFavorite } from '@/services/favorite.service';
 import { getProduct } from '@/services/product.service';
 import { getSeller } from '@/services/seller.service';
 import { Product, Seller } from '@/types';
@@ -33,9 +34,34 @@ export default function ProductDetailScreen() {
   const [product, setProduct] = useState<Product | null>(null);
   const [seller, setSeller] = useState<Seller | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoritesCount, setFavoritesCount] = useState<number>(0);
 
   useEffect(() => {
     loadProductData();
+  }, [productId]);
+
+  useEffect(() => {
+    async function checkFav() {
+      if (user?.id && productId) {
+        try {
+          const fav = await isProductFavorited(user.id, String(productId));
+          setIsFavorite(fav);
+        } catch {}
+      }
+    }
+    checkFav();
+  }, [user?.id, productId]);
+
+  useEffect(() => {
+    async function loadCount() {
+      if (!productId) return;
+      try {
+        const count = await getFavoritesCount(String(productId));
+        setFavoritesCount(count);
+      } catch {}
+    }
+    loadCount();
   }, [productId]);
 
   const loadProductData = async () => {
@@ -132,6 +158,19 @@ export default function ProductDetailScreen() {
         options={{
           title: product.name,
           headerShown: true,
+          headerRight: () => (
+            <Pressable
+              onPress={async () => {
+                if (!user?.id) return;
+                const nowFav = await toggleFavorite(user.id, product.id);
+                setIsFavorite(nowFav);
+                setFavoritesCount((c) => Math.max(0, c + (nowFav ? 1 : -1)));
+              }}
+              style={{ paddingHorizontal: 8, paddingVertical: 8 }}
+            >
+              <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color={isFavorite ? '#d9534f' : '#333'} />
+            </Pressable>
+          ),
           headerLeft: () => (
             <Pressable
               onPress={() => {
@@ -177,6 +216,7 @@ export default function ProductDetailScreen() {
           <View style={styles.header}>
             <Text style={styles.name}>{product.name}</Text>
             <Text style={styles.price}>{formatPrice(product.price)}</Text>
+            <Text style={styles.favCount}>❤️ {favoritesCount}</Text>
           </View>
 
           {!product.inStock && (
@@ -328,6 +368,9 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   name: {
     fontSize: 28,
@@ -339,6 +382,12 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     color: Colors.primary,
+  },
+  favCount: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '600',
   },
   outOfStockBanner: {
     backgroundColor: '#FFE5E5',

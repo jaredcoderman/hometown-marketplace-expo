@@ -1,7 +1,9 @@
 import { ProductCard } from '@/components/products/product-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { getFavoritesByBuyer, getFavoritesCount, toggleFavorite } from '@/services/favorite.service';
 import { getProductsBySeller } from '@/services/product.service';
 import { getSeller } from '@/services/seller.service';
 import { Product, Seller } from '@/types';
@@ -20,9 +22,12 @@ import {
 export default function SellerDetailScreen() {
   const { sellerId } = useLocalSearchParams<{ sellerId: string }>();
   const { show } = useToast();
+  const { user } = useAuth();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteCounts, setFavoriteCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadSellerData();
@@ -42,11 +47,34 @@ export default function SellerDetailScreen() {
       ]);
       setSeller(sellerData);
       setProducts(productsData);
+      if (user?.id) {
+        const favs = await getFavoritesByBuyer(user.id);
+        setFavoriteIds(new Set(favs));
+      }
+      // Load favorites counts lazily for shown products
+      const counts = await Promise.all(
+        productsData.map(async (p) => [p.id, await getFavoritesCount(p.id)] as const)
+      );
+      setFavoriteCounts(Object.fromEntries(counts));
     } catch (error: any) {
       show('Failed to load seller information', 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleToggleFavorite = async (productId: string) => {
+    if (!user?.id) return;
+    const nowFav = await toggleFavorite(user.id, productId);
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (nowFav) next.add(productId); else next.delete(productId);
+      return next;
+    });
+    setFavoriteCounts((prev) => ({
+      ...prev,
+      [productId]: Math.max(0, (prev[productId] ?? 0) + (nowFav ? 1 : -1)),
+    }));
   };
 
   const handleProductPress = (productId: string) => {
@@ -146,6 +174,9 @@ export default function SellerDetailScreen() {
                     product={product}
                     onPress={() => handleProductPress(product.id)}
                     fullWidth
+                    isFavorite={favoriteIds.has(product.id)}
+                    favoritesCount={favoriteCounts[product.id]}
+                    onToggleFavorite={() => handleToggleFavorite(product.id)}
                   />
                 </View>
               ))}

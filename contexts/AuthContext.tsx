@@ -9,6 +9,8 @@ import {
     signInWithEmailAndPassword,
 } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { prefetchBuyerHomeAssets } from '@/utils/prefetch';
+import { useLocation } from '@/contexts/LocationContext';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +28,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  // Access location (if available) for targeted prefetching
+  // Note: guards against use outside provider tree via optional usage
+  let locationCtx: ReturnType<typeof useLocation> | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    locationCtx = useLocation();
+  } catch {}
 
   useEffect(() => {
     console.log('=== Setting up auth state listener ===');
@@ -44,6 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             userType: userData.userType
           });
           setUser(userData);
+          // Warm up buyer assets once we have the user
+          if (userData.userType === 'buyer') {
+            const loc = locationCtx?.location;
+            const radius = locationCtx?.radiusMiles;
+            prefetchBuyerHomeAssets({ location: loc, radiusMiles: radius });
+          }
         } catch (error) {
           console.error('Error fetching user data:', error);
           setUser(null);

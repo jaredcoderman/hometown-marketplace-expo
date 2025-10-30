@@ -1,8 +1,9 @@
+import { LazyImage } from '@/components/ui/lazy-image';
 import Colors from '@/constants/Colors';
 import { SellerWithDistance } from '@/types';
 import { formatDistance } from '@/utils/location';
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface SellerCardProps {
   seller: SellerWithDistance;
@@ -30,7 +31,7 @@ export function SellerCard({ seller, onPress }: SellerCardProps) {
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.avatarContainer}>
         {seller.avatar ? (
-          <Image source={{ uri: seller.avatar }} style={styles.avatar} />
+          <LazyImage uri={seller.avatar} style={styles.avatar} />
         ) : (
           <View style={[styles.avatarPlaceholder, { backgroundColor: avatarBg }]}>
             <Text style={styles.avatarText}>

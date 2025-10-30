@@ -6,6 +6,7 @@ import { useLocation } from '@/contexts/LocationContext';
 import { useToast } from '@/contexts/ToastContext';
 import { getNearbySellers } from '@/services/seller.service';
 import { SellerWithDistance } from '@/types';
+import { prefetchImages } from '@/components/ui/lazy-image';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -39,6 +40,9 @@ export default function BuyerDashboard() {
     try {
       const nearbySellers = await getNearbySellers(location, radiusMiles);
       setSellers(nearbySellers);
+      // Prefetch seller avatars
+      const avatarUrls = nearbySellers.map((s) => s.avatar).filter(Boolean) as string[];
+      if (avatarUrls.length) prefetchImages(avatarUrls);
     } catch (error: any) {
       show('Failed to load nearby sellers', 'error');
     } finally {

@@ -1,23 +1,42 @@
 import { ProductCard } from '@/components/products/product-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useAuth } from '@/contexts/AuthContext';
+import { getFavoritesByBuyer, getFavoritesCount, toggleFavorite } from '@/services/favorite.service';
 import { getAllProducts } from '@/services/product.service';
+import { getSeller } from '@/services/seller.service';
 import { Product } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     FlatList,
     StyleSheet,
+    Switch,
+    Text,
     TextInput,
     View
 } from 'react-native';
 
 export default function SearchScreen() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const [favoriteCounts, setFavoriteCounts] = useState<Record<string, number>>({});
+  const [sellerNamesById, setSellerNamesById] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    async function loadFavs() {
+      if (!user?.id) return;
+      const favs = await getFavoritesByBuyer(user.id);
+      setFavoriteIds(new Set(favs));
+    }
+    loadFavs();
+  }, [user?.id]);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -34,6 +53,21 @@ export default function SearchScreen() {
     try {
       const results = await getAllProducts({ searchQuery: query });
       setProducts(results);
+      // Load counts lazily
+      const counts = await Promise.all(
+        results.map(async (p) => [p.id, await getFavoritesCount(p.id)] as const)
+      );
+      setFavoriteCounts(Object.fromEntries(counts));
+
+      // Load seller names for display
+      const uniqueSellerIds = Array.from(new Set(results.map((p) => p.sellerId)));
+      const sellerPairs = await Promise.all(
+        uniqueSellerIds.map(async (id) => {
+          try { const s = await getSeller(id); return [id, s.businessName] as const; }
+          catch { return [id, ''] as const; }
+        })
+      );
+      setSellerNamesById((prev) => ({ ...prev, ...Object.fromEntries(sellerPairs) }));
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -56,6 +90,11 @@ export default function SearchScreen() {
           autoCapitalize="none"
           clearButtonMode="while-editing"
         />
+        <View style={styles.filterRow}>
+          <Switch value={onlyFavorites} onValueChange={setOnlyFavorites} />
+          <View style={{ width: 8 }} />
+          <TextInput editable={false} value={onlyFavorites ? 'Only favorites' : 'All results'} style={styles.fakeLabel} />
+        </View>
       </View>
 
       {loading ? (
@@ -74,12 +113,32 @@ export default function SearchScreen() {
         />
       ) : (
         <FlatList
-          data={products}
+          data={products.filter((p) => !onlyFavorites || favoriteIds.has(p.id))}
           renderItem={({ item }) => (
-            <ProductCard
-              product={item}
-              onPress={() => handleProductPress(item.id)}
-            />
+            <View style={styles.gridItem}>
+              <ProductCard
+                product={item}
+                onPress={() => handleProductPress(item.id)}
+                isFavorite={favoriteIds.has(item.id)}
+                favoritesCount={favoriteCounts[item.id]}
+                onToggleFavorite={async () => {
+                  if (!user?.id) return;
+                  const nowFav = await toggleFavorite(user.id, item.id);
+                  setFavoriteIds((prev) => {
+                    const next = new Set(prev);
+                    if (nowFav) next.add(item.id); else next.delete(item.id);
+                    return next;
+                  });
+                  setFavoriteCounts((prev) => ({
+                    ...prev,
+                    [item.id]: Math.max(0, (prev[item.id] ?? 0) + (nowFav ? 1 : -1)),
+                  }));
+                }}
+              />
+              {sellerNamesById[item.sellerId] ? (
+                <Text style={styles.brandName}>{sellerNamesById[item.sellerId]}</Text>
+              ) : null}
+            </View>
           )}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
@@ -109,12 +168,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
   },
+  filterRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fakeLabel: {
+    color: '#666',
+  },
   list: {
     padding: 16,
   },
   row: {
     justifyContent: 'space-between',
     gap: 12,
+  },
+  gridItem: {
+    width: '48%',
+    marginBottom: 16,
+  },
+  brandName: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
   },
 });
 
