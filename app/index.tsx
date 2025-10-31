@@ -8,8 +8,8 @@ export default function Index() {
   const { user, loading: authLoading } = useAuth();
   const { location, loading: locationLoading } = useLocation();
 
-  // Show loading while checking auth state
-  if (authLoading) {
+  // Show loading while checking auth state or location
+  if (authLoading || locationLoading) {
     return (
       <View style={{ flex: 1 }}>
         <LoadingSpinner fullScreen message="Loading..." />

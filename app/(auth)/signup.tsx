@@ -5,8 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { UserType } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { Link, router } from 'expo-router';
+import React, { useState } from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
@@ -19,16 +19,8 @@ import {
 
 export default function SignupScreen() {
   const { signup, user, loading: authLoading } = useAuth();
-  const router = useRouter();
   const { show } = useToast();
   
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!authLoading && user) {
-      const targetRoute = user.userType === 'buyer' ? '/(buyer)/dashboard' : '/(seller)/dashboard';
-      router.replace(targetRoute);
-    }
-  }, [user, authLoading, router]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,7 +59,8 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await signup({ name, email, password, userType });
-      // Navigation is handled by the index screen
+      // Navigate to root index, which will redirect based on location/auth state
+      router.replace('/');
     } catch (error: any) {
       let msg = 'Signup failed. Please try again.';
       if (error?.code === 'auth/email-already-in-use') msg = 'That email is already in use.';

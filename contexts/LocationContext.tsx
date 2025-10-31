@@ -24,7 +24,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [location, setLocationState] = useState<Location | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [radiusMiles, setRadiusMilesState] = useState(10); // Default 10 miles
+  const [radiusMiles, setRadiusMilesState] = useState(15); // Default 15 miles
 
   useEffect(() => {
     loadStoredLocation();

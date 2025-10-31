@@ -92,24 +92,30 @@ export default function SellerProfileScreen() {
 
       if (seller) {
         // Update existing seller
-        await updateSeller(seller.id, {
+        const updateData: any = {
           businessName: businessName.trim(),
           description: description.trim(),
           categories: categoryArray,
           location,
-          avatar: avatarUrl || undefined,
-        });
+        };
+        if (avatarUrl) {
+          updateData.avatar = avatarUrl;
+        }
+        await updateSeller(seller.id, updateData);
         show('Profile updated successfully!', 'success');
       } else {
         // Create new seller
-        await createSeller(user.id, {
+        const sellerData: any = {
           userId: user.id,
           businessName: businessName.trim(),
           description: description.trim(),
           categories: categoryArray,
           location,
-          avatar: avatarUrl || undefined,
-        });
+        };
+        if (avatarUrl) {
+          sellerData.avatar = avatarUrl;
+        }
+        await createSeller(user.id, sellerData);
         show('Seller profile created successfully!', 'success');
         router.replace('/(seller)/dashboard');
       }

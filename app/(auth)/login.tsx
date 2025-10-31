@@ -3,8 +3,8 @@ import { Input } from '@/components/ui/input';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { Link, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { Link, router } from 'expo-router';
+import React, { useState } from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
@@ -16,20 +16,12 @@ import {
 
 export default function LoginScreen() {
   const { login, user, loading: authLoading } = useAuth();
-  const router = useRouter();
   const { show } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (!authLoading && user) {
-      const targetRoute = user.userType === 'buyer' ? '/(buyer)/dashboard' : '/(seller)/dashboard';
-      router.replace(targetRoute);
-    }
-  }, [user, authLoading, router]);
 
   const handleLogin = async () => {
     // Reset errors
@@ -53,8 +45,9 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const result = await login({ email, password });
-      // Navigation is handled by the index screen based on user type
+      await login({ email, password });
+      // Navigate to root index, which will redirect based on location/auth state
+      router.replace('/');
     } catch (error: any) {
       let msg = 'Login failed. Please check your email and password.';
       if (error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password') {
