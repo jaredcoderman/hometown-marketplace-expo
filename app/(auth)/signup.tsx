@@ -6,15 +6,15 @@ import { useToast } from '@/contexts/ToastContext';
 import { UserType } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 export default function SignupScreen() {
@@ -28,6 +28,14 @@ export default function SignupScreen() {
   const [userType, setUserType] = useState<UserType>('buyer');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [signupSuccess, setSignupSuccess] = useState(false);
+
+  // Redirect when user becomes available after signup
+  useEffect(() => {
+    if (signupSuccess && user && !authLoading) {
+      router.replace('/');
+    }
+  }, [signupSuccess, user, authLoading]);
 
   const emailRegex = /^(?:[a-zA-Z0-9_'^&\-]+(?:\.[a-zA-Z0-9_'^&\-]+)*)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
 
@@ -59,9 +67,10 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await signup({ name, email, password, userType });
-      // Navigate to root index, which will redirect based on location/auth state
-      router.replace('/');
+      // Set flag to trigger redirect via useEffect when user state updates
+      setSignupSuccess(true);
     } catch (error: any) {
+      setSignupSuccess(false);
       let msg = 'Signup failed. Please try again.';
       if (error?.code === 'auth/email-already-in-use') msg = 'That email is already in use.';
       else if (error?.code === 'auth/invalid-email') msg = 'Enter a valid email address.';

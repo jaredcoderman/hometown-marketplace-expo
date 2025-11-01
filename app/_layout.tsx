@@ -12,6 +12,7 @@ import Colors from '@/constants/Colors';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LocationProvider } from '@/contexts/LocationContext';
 import { ToastProvider } from '@/contexts/ToastContext';
+import { ViewModeProvider } from '@/contexts/ViewModeContext';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -72,9 +73,10 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <LocationProvider>
-        <ThemeProvider value={AutumnTheme}>
-          <ToastProvider>
-          <Stack
+        <ViewModeProvider>
+          <ThemeProvider value={AutumnTheme}>
+            <ToastProvider>
+            <Stack
             screenOptions={{
               headerShown: true,
               headerTitleAlign: 'center',
@@ -92,8 +94,9 @@ export default function RootLayout() {
             <Stack.Screen name="(seller)" />
           </Stack>
           <StatusBar style="dark" />
-          </ToastProvider>
-        </ThemeProvider>
+            </ToastProvider>
+          </ThemeProvider>
+        </ViewModeProvider>
       </LocationProvider>
     </AuthProvider>
   );

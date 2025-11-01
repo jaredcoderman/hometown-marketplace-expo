@@ -10,16 +10,17 @@ import { createSeller, getSellerByUserId, updateSeller } from '@/services/seller
 import { pickImage, uploadUserAvatar } from '@/services/storage.service';
 import { Seller } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 export default function SellerProfileScreen() {
@@ -138,10 +139,25 @@ export default function SellerProfileScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <>
+      <Stack.Screen
+        options={{
+          title: 'Profile',
+          headerShown: true,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.push('/(seller)/dashboard')}
+              style={{ marginLeft: 16 }}
+            >
+              <Ionicons name="arrow-back" size={24} color={Colors.text} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -255,7 +271,8 @@ export default function SellerProfileScreen() {
           }
         }}
       />
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </>
   );
 }
 

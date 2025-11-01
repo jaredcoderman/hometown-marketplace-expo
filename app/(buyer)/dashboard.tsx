@@ -1,21 +1,21 @@
 import { SellerCard } from '@/components/sellers/seller-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { prefetchImages } from '@/components/ui/lazy-image';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
 import { useToast } from '@/contexts/ToastContext';
-import { getNearbySellers } from '@/services/seller.service';
+import { getNearbySellers, getSellerByUserId } from '@/services/seller.service';
 import { SellerWithDistance } from '@/types';
-import { prefetchImages } from '@/components/ui/lazy-image';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    FlatList,
+    Animated,
     RefreshControl,
     StyleSheet,
     Text,
     TextInput,
-    View,
+    View
 } from 'react-native';
 
 export default function BuyerDashboard() {
@@ -26,6 +26,34 @@ export default function BuyerDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const { show } = useToast();
   const [brandQuery, setBrandQuery] = useState('');
+
+  // Simpler mobile-friendly behavior: show at top, fade/collapse after threshold
+  const HEADER_MAX = 48; // base height for location/radius row
+  const SEARCH_MAX = 52; // base height for search bar
+  const THRESHOLD_PX = 80; // ~10% of a typical viewport, tweak as needed
+
+  const visibility = React.useRef(new Animated.Value(1)).current; // 1=visible, 0=hidden
+  const targetRef = React.useRef(1);
+
+  const animateTo = (value: number) => {
+    if (targetRef.current === value) return;
+    targetRef.current = value;
+    Animated.timing(visibility, {
+      toValue: value,
+      duration: 180,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const headerHeight = visibility.interpolate({ inputRange: [0, 1], outputRange: [0, HEADER_MAX] });
+  const headerOpacity = visibility;
+  const headerPadding = visibility.interpolate({ inputRange: [0, 1], outputRange: [0, 16] });
+  const headerBorder = visibility;
+
+  const searchHeight = visibility.interpolate({ inputRange: [0, 1], outputRange: [0, SEARCH_MAX] });
+  const searchOpacity = visibility;
+  const searchPadding = visibility.interpolate({ inputRange: [0, 1], outputRange: [0, 8] });
+  const searchBorder = visibility;
 
   useEffect(() => {
     loadSellers();
@@ -39,9 +67,19 @@ export default function BuyerDashboard() {
 
     try {
       const nearbySellers = await getNearbySellers(location, radiusMiles);
-      setSellers(nearbySellers);
+      
+      // Filter out the seller's own business if they're in buyer mode
+      let filteredSellers = nearbySellers;
+      if (user?.userType === 'seller') {
+        const ownSeller = await getSellerByUserId(user.id);
+        if (ownSeller) {
+          filteredSellers = nearbySellers.filter((s) => s.id !== ownSeller.id);
+        }
+      }
+      
+      setSellers(filteredSellers);
       // Prefetch seller avatars
-      const avatarUrls = nearbySellers.map((s) => s.avatar).filter(Boolean) as string[];
+      const avatarUrls = filteredSellers.map((s) => s.avatar).filter(Boolean) as string[];
       if (avatarUrls.length) prefetchImages(avatarUrls);
     } catch (error: any) {
       show('Failed to load nearby sellers', 'error');
@@ -82,7 +120,7 @@ export default function BuyerDashboard() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, { height: headerHeight, opacity: headerOpacity, overflow: 'hidden', paddingVertical: headerPadding as any, borderBottomWidth: headerBorder as any }]}>
         <View style={styles.locationRow}>
           <Text style={styles.locationPin}>📍</Text>
           <Text style={styles.location}>{location.city}, {location.state}</Text>
@@ -90,9 +128,9 @@ export default function BuyerDashboard() {
         <View style={styles.radiusChip}>
           <Text style={styles.radiusText}>Within {radiusMiles} miles</Text>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.searchBarContainer}>
+      <Animated.View style={[styles.searchBarContainer, { height: searchHeight, opacity: searchOpacity, overflow: 'hidden', paddingTop: searchPadding as any, paddingBottom: searchPadding as any, borderBottomWidth: searchBorder as any }]} >
         <TextInput
           style={styles.searchBar}
           placeholder="Search brands..."
@@ -100,7 +138,7 @@ export default function BuyerDashboard() {
           onChangeText={setBrandQuery}
           autoCapitalize="none"
         />
-      </View>
+      </Animated.View>
 
       {filteredSellers.length === 0 ? (
         <EmptyState
@@ -111,7 +149,7 @@ export default function BuyerDashboard() {
           onAction={handleRefresh}
         />
       ) : (
-        <FlatList
+        <Animated.FlatList
           data={filteredSellers}
           renderItem={({ item }) => (
             <SellerCard
@@ -124,6 +162,10 @@ export default function BuyerDashboard() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
+          onScroll={(e) => {
+            const y = e.nativeEvent.contentOffset.y;
+            if (y > THRESHOLD_PX) animateTo(0); else animateTo(1);
+          }}
         />
       )}
     </View>

@@ -128,6 +128,19 @@ export default function RequestsScreen() {
     }
   };
 
+  const getStatusBackground = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return '#FFF9E6'; // Light yellow/amber
+      case 'approved':
+        return '#E8F5E9'; // Light green
+      case 'rejected':
+        return '#FFEBEE'; // Light red
+      default:
+        return '#F5F5F5';
+    }
+  };
+
   const getStatusIconName = (status: string) => {
     switch (status) {
       case 'pending':
@@ -146,51 +159,43 @@ export default function RequestsScreen() {
     const isProcessing = processingId === item.id;
 
     return (
-      <TouchableOpacity
-        style={styles.requestCard}
-        onPress={() => setExpandedId(isExpanded ? null : item.id)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.requestHeader}>
-          <View style={styles.requestInfo}>
-            <Text style={styles.buyerName}>{item.buyerName}</Text>
+      <View style={styles.card}>
+        <TouchableOpacity
+          onPress={() => setExpandedId(isExpanded ? null : item.id)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.rowBetween}>
             <Text style={styles.productName}>{item.productName}</Text>
-          </View>
-          <View style={styles.statusBadge}>
-            <View style={styles.statusRow}>
-              <Ionicons name={getStatusIconName(item.status) as any} size={14} color={getStatusColor(item.status)} style={{ marginRight: 6 }} />
+            <View style={[styles.statusBadge, { backgroundColor: getStatusBackground(item.status) }]}>
+              <Ionicons 
+                name={getStatusIconName(item.status) as any} 
+                size={14} 
+                color={getStatusColor(item.status)} 
+                style={{ marginRight: 4 }} 
+              />
               <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
                 {item.status.toUpperCase()}
               </Text>
             </View>
           </View>
-        </View>
-
-        <View style={styles.requestDetails}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Quantity:</Text>
-            <Text style={styles.detailValue}>{item.quantity}</Text>
+          
+          <Text style={styles.buyerText}>Buyer: {item.buyerName}</Text>
+          
+          <View style={styles.rowBetween}>
+            <Text style={styles.metaText}>Qty: {item.quantity}</Text>
+            <Text style={styles.total}>{formatPrice(item.totalPrice)}</Text>
           </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Total:</Text>
-            <Text style={styles.totalPrice}>{formatPrice(item.totalPrice)}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Date:</Text>
-            <Text style={styles.detailValue}>
-              {item.createdAt.toLocaleDateString()}
-            </Text>
-          </View>
-        </View>
+          
+          <Text style={styles.date}>{item.createdAt.toLocaleDateString()}</Text>
+        </TouchableOpacity>
 
         {isExpanded && (
           <View style={styles.expandedContent}>
-            <View style={styles.messageSection}>
-              <Text style={styles.messageLabel}>Message from buyer:</Text>
-              <Text style={styles.messageText}>
-                {item.message || 'No additional message'}
-              </Text>
-            </View>
+            {item.message ? (
+              <View style={styles.messageSection}>
+                <Text style={styles.message}>{item.message}</Text>
+              </View>
+            ) : null}
 
             <View style={styles.contactSection}>
               <Text style={styles.contactLabel}>Contact:</Text>
@@ -217,7 +222,7 @@ export default function RequestsScreen() {
             )}
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -322,15 +327,13 @@ const styles = StyleSheet.create({
   list: {
     padding: 16,
   },
-  headerSection: {
-    marginBottom: 12,
-  },
   filtersRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     paddingHorizontal: 16,
     marginTop: 8,
+    marginBottom: 8,
   },
   filterChip: {
     backgroundColor: Colors.backgroundSecondary,
@@ -352,110 +355,88 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: '#FFF',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  requestCard: {
-    backgroundColor: Colors.card,
+  card: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  requestHeader: {
+  rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
   },
-  requestInfo: {
-    flex: 1,
-  },
-  buyerName: {
+  productName: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 4,
-  },
-  productName: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    flex: 1,
+    marginRight: 12,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  requestDetails: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: 12,
+  statusText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  detailLabel: {
-    fontSize: 14,
+  buyerText: {
+    marginTop: 4,
+    fontSize: 12,
     color: Colors.textSecondary,
   },
-  detailValue: {
-    fontSize: 14,
-    color: Colors.text,
-    fontWeight: '500',
+  metaText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
-  totalPrice: {
+  total: {
+    marginTop: 6,
     fontSize: 16,
     fontWeight: '700',
     color: Colors.primary,
+  },
+  date: {
+    marginTop: 8,
+    fontSize: 11,
+    color: Colors.textSecondary,
   },
   expandedContent: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: '#E0E0E0',
   },
   messageSection: {
     marginBottom: 12,
   },
-  messageLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+  message: {
+    fontSize: 13,
     color: Colors.text,
-    marginBottom: 4,
-  },
-  messageText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
     lineHeight: 20,
   },
   contactSection: {
     marginBottom: 16,
   },
   contactLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
-    color: Colors.text,
+    color: Colors.textSecondary,
     marginBottom: 4,
   },
   contactText: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.primary,
   },
   actions: {

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getProductsBySeller } from '@/services/product.service';
 import { getSellerByUserId } from '@/services/seller.service';
 import { Product } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -73,6 +74,15 @@ export default function ProductsListScreen() {
     <>
       <Stack.Screen
         options={{
+          title: 'Products',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.push('/(seller)/dashboard')}
+              style={{ marginLeft: 16 }}
+            >
+              <Ionicons name="arrow-back" size={24} color={Colors.text} />
+            </TouchableOpacity>
+          ),
           headerRight: () => (
             <TouchableOpacity onPress={handleAddProduct} style={styles.addButton}>
               <Text style={styles.addButtonText}>+ Add</Text>

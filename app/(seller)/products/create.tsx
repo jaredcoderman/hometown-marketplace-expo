@@ -124,6 +124,14 @@ export default function CreateProductScreen() {
         options={{
           title: 'Add Product',
           headerShown: true,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.push('/(seller)/dashboard')}
+              style={{ marginLeft: 16 }}
+            >
+              <Ionicons name="arrow-back" size={24} color={Colors.text} />
+            </TouchableOpacity>
+          ),
         }}
       />
       <KeyboardAvoidingView

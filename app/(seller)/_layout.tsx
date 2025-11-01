@@ -1,12 +1,13 @@
 import { HapticTab } from '@/components/haptic-tab';
 import AppColors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { getRequestsBySeller } from '@/services/request.service';
 import { getSellerByUserId } from '@/services/seller.service';
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function RequestsIconWithBadge({ color }: { color: string }) {
   const { user } = useAuth();
@@ -54,12 +55,66 @@ function RequestsIconWithBadge({ color }: { color: string }) {
   );
 }
 
+function ViewModeToggle() {
+  const { mode, setMode } = useViewMode();
+  const { user } = useAuth();
+
+  // Only show toggle for seller accounts
+  if (user?.userType !== 'seller') return null;
+
+  const handleSwitchToBuyer = async () => {
+    if (mode === 'buyer') return; // Already in buyer mode
+    await setMode('buyer');
+    router.replace('/(buyer)/dashboard');
+  };
+
+  const handleSwitchToSeller = async () => {
+    if (mode === 'seller') return; // Already in seller mode
+    await setMode('seller');
+    router.replace('/(seller)/dashboard');
+  };
+
+  return (
+    <View style={styles.toggleContainer}>
+      <TouchableOpacity
+        style={[styles.toggleOption, mode === 'seller' && styles.toggleOptionActive]}
+        onPress={handleSwitchToSeller}
+      >
+        <Ionicons 
+          name={mode === 'seller' ? 'storefront' : 'storefront-outline'} 
+          size={16} 
+          color={mode === 'seller' ? '#FFF' : AppColors.textSecondary} 
+          style={{ marginRight: 4 }}
+        />
+        <Text style={[styles.toggleText, mode === 'seller' && styles.toggleTextActive]}>
+          Sell
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.toggleOption, mode === 'buyer' && styles.toggleOptionActive]}
+        onPress={handleSwitchToBuyer}
+      >
+        <Ionicons 
+          name={mode === 'buyer' ? 'cart' : 'cart-outline'} 
+          size={16} 
+          color={mode === 'buyer' ? '#FFF' : AppColors.textSecondary} 
+          style={{ marginRight: 4 }}
+        />
+        <Text style={[styles.toggleText, mode === 'buyer' && styles.toggleTextActive]}>
+          Buy
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function SellerLayout() {
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: AppColors.primary,
         headerShown: true,
+        headerRight: () => <ViewModeToggle />,
         tabBarButton: HapticTab,
         tabBarStyle: {
           backgroundColor: AppColors.card,
@@ -118,4 +173,34 @@ export default function SellerLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: AppColors.backgroundSecondary,
+    borderRadius: 8,
+    padding: 2,
+    marginRight: 16,
+  },
+  toggleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    minWidth: 70,
+    justifyContent: 'center',
+  },
+  toggleOptionActive: {
+    backgroundColor: AppColors.primary,
+  },
+  toggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: AppColors.textSecondary,
+  },
+  toggleTextActive: {
+    color: '#FFF',
+  },
+});
 

@@ -7,8 +7,10 @@ import { subscribeToBuyerRequests } from '@/services/request.service';
 import { getSeller } from '@/services/seller.service';
 import { ProductRequest } from '@/types';
 import { formatPrice } from '@/utils/formatters';
+import { clearPendingNotifications } from '@/utils/notifications';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 export default function BuyerRequestsScreen() {
@@ -19,6 +21,14 @@ export default function BuyerRequestsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [sellerNamesById, setSellerNamesById] = useState<Record<string, string>>({});
   const previousStatusesRef = useRef<Record<string, string>>({});
+
+  // Clear pending notifications when user visits the screen
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      clearPendingNotifications(user.id);
+    }, [user?.id])
+  );
 
   useEffect(() => {
     if (!user?.id) return;

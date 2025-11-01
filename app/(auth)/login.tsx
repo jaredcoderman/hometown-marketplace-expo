@@ -4,7 +4,7 @@ import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Link, router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
@@ -21,7 +21,14 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
+  // Redirect when user becomes available after login
+  useEffect(() => {
+    if (loginSuccess && user && !authLoading) {
+      router.replace('/');
+    }
+  }, [loginSuccess, user, authLoading]);
 
   const handleLogin = async () => {
     // Reset errors
@@ -46,9 +53,10 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login({ email, password });
-      // Navigate to root index, which will redirect based on location/auth state
-      router.replace('/');
+      // Set flag to trigger redirect via useEffect when user state updates
+      setLoginSuccess(true);
     } catch (error: any) {
+      setLoginSuccess(false);
       let msg = 'Login failed. Please check your email and password.';
       if (error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password') {
         msg = 'Incorrect email or password.';
