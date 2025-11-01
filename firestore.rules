@@ -1,0 +1,232 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function changedOnly(allowed) {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(allowed);
+    }
+    function hasOnly(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
+
+    // Users
+    match /users/{userId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isOwner(userId) && hasOnly([
+        'id','name','email','userType','phoneNumber','avatar','location','isAdmin','createdAt','updatedAt'
+      ]);
+      allow delete: if false;
+    }
+
+    // Sellers (app uses `businessName`)
+    match /sellers/{sellerId} {
+      allow get, list: if isSignedIn();
+
+      // Create (owner only). App also writes geohash/rating/reviewCount server-side.
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && hasOnly([
+          'id','userId','businessName','description','location',
+          'categories','avatar','coverImage','venmo',
+          'geohash','rating','reviewCount',
+          'createdAt','updatedAt'
+        ]);
+
+      // Update (owner only)
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && changedOnly([
+          'businessName','description','location','categories',
+          'avatar','coverImage','venmo','geohash','updatedAt'
+        ]);
+
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Products
+    match /products/{productId} {
+      allow get, list: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.sellerId == request.auth.uid
+        && exists(/databases/$(database)/documents/sellers/$(request.auth.uid))
+        && request.resource.data.price is number && request.resource.data.price >= 0
+        && (request.resource.data.quantity is int || !(request.resource.data.keys().hasAny(['quantity'])))
+        && (request.resource.data.quantity == null || request.resource.data.quantity >= 0)
+        && hasOnly([
+          'id','sellerId','name','description','price','quantity',
+          'inStock','images','emoji','tags','category','rating','reviewCount',
+          'createdAt','updatedAt'
+        ]);
+
+      allow update: if isSignedIn()
+        && (
+          // Sellers can update their product fields (but not rating/reviewCount)
+          (
+            resource.data.sellerId == request.auth.uid
+            && changedOnly([
+              'name','description','price','quantity','inStock',
+              'images','emoji','tags','category','updatedAt'
+            ])
+            && (request.resource.data.price is number)
+            && (request.resource.data.price >= 0)
+            && (request.resource.data.quantity is int || !(request.resource.data.keys().hasAny(['quantity'])))
+            && (request.resource.data.quantity == null || request.resource.data.quantity >= 0)
+          )
+          ||
+          // Anyone signed in can update only rating and reviewCount (called after review creation)
+          (
+            changedOnly(['rating','reviewCount','updatedAt'])
+            && request.resource.data.rating is number
+            && request.resource.data.rating >= 0 && request.resource.data.rating <= 5
+            && request.resource.data.reviewCount is int
+            && request.resource.data.reviewCount >= 0
+          )
+        );
+
+      allow delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
+    }
+
+    // Requests
+    match /requests/{requestId} {
+      allow get, list: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.quantity is int && request.resource.data.quantity > 0
+        && request.resource.data.productPrice is number
+        && request.resource.data.totalPrice ==
+             request.resource.data.productPrice * request.resource.data.quantity
+        && exists(/databases/$(database)/documents/products/$(request.resource.data.productId))
+        && get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.price
+             == request.resource.data.productPrice
+        && get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.sellerId
+             == request.resource.data.sellerId
+        && request.resource.data.quantity <= get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.quantity
+        && hasOnly([
+          'id','buyerId','buyerName','buyerEmail',
+          'sellerId','productId','productName','productPrice',
+          'quantity','totalPrice','message','status','createdAt','updatedAt'
+        ]);
+
+      allow update: if isSignedIn()
+        && resource.data.sellerId == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['approved','rejected']
+        && changedOnly(['status','updatedAt']);
+
+      // Allow buyers to delete their own pending requests
+      allow delete: if isSignedIn()
+        && resource.data.buyerId == request.auth.uid
+        && resource.data.status == 'pending';
+    }
+
+    // Favorites
+    match /favorites/{favId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.id == (request.auth.uid + '_' + request.resource.data.productId)
+        && request.resource.data.keys().hasOnly(['id','buyerId','productId','createdAt']);
+      allow delete: if isSignedIn() && resource.data.buyerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Reviews
+    match /reviews/{reviewId} {
+      // Anyone signed in can read reviews
+      allow get, list: if isSignedIn();
+
+      // Only the buyer can create a review for themselves
+      allow create: if isSignedIn()
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.rating is int 
+        && request.resource.data.rating >= 1 
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() > 0
+        && hasOnly([
+          'id','productId','buyerId','buyerName','buyerAvatar',
+          'rating','comment','createdAt','updatedAt'
+        ]);
+
+      // Only the buyer who created the review can update it
+      allow update: if isSignedIn()
+        && resource.data.buyerId == request.auth.uid
+        && changedOnly(['rating','comment','updatedAt'])
+        && request.resource.data.rating is int 
+        && request.resource.data.rating >= 1 
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() > 0;
+
+      // Only the buyer who created the review can delete it
+      allow delete: if isSignedIn() && resource.data.buyerId == request.auth.uid;
+    }
+
+    // Bug Reports
+    match /bugs/{bugId} {
+      // Allow any signed-in user to create a bug report
+      allow create: if isSignedIn()
+        && request.resource.data.status == 'open'
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && (request.resource.data.userId == null || request.resource.data.userId == request.auth.uid)
+        && (request.resource.data.userEmail == null || request.resource.data.userEmail is string)
+        && (request.resource.data.userName == null || request.resource.data.userName is string)
+        && hasOnly([
+          'userId','userEmail','userName','title','description','status','createdAt','updatedAt'
+        ]);
+
+      // Allow users to read their own bug reports
+      allow get: if isSignedIn() && (resource.data.userId == null || resource.data.userId == request.auth.uid);
+
+      // Allow admins to read all bug reports
+      allow list: if isSignedIn();
+
+      // Only allow status updates (for admins) - regular users can't update
+      allow update: if isSignedIn()
+        && changedOnly(['status','updatedAt'])
+        && request.resource.data.status in ['open','investigating','resolved','closed'];
+
+      // Don't allow deletion (keep bug history)
+      allow delete: if false;
+    }
+
+    // Suggestions
+    match /suggestions/{suggestionId} {
+      // Allow any signed-in user to create a suggestion
+      allow create: if isSignedIn()
+        && request.resource.data.status == 'open'
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && (request.resource.data.userId == null || request.resource.data.userId == request.auth.uid)
+        && (request.resource.data.userEmail == null || request.resource.data.userEmail is string)
+        && (request.resource.data.userName == null || request.resource.data.userName is string)
+        && hasOnly([
+          'userId','userEmail','userName','title','description','status','createdAt','updatedAt'
+        ]);
+
+      // Allow users to read their own suggestions
+      allow get: if isSignedIn() && (resource.data.userId == null || resource.data.userId == request.auth.uid);
+
+      // Allow admins to read all suggestions
+      allow list: if isSignedIn();
+
+      // Only allow status updates (for admins) - regular users can't update
+      allow update: if isSignedIn()
+        && changedOnly(['status','updatedAt'])
+        && request.resource.data.status in ['open','under-review','implemented','closed'];
+
+      // Don't allow deletion (keep suggestion history)
+      allow delete: if false;
+    }
+  }
+}
