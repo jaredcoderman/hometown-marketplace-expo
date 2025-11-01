@@ -117,3 +117,16 @@ export interface FavoriteProduct {
   createdAt: Date;
 }
 
+// Bug Reports
+export interface BugReport {
+  id: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  title: string;
+  description: string;
+  status: 'open' | 'investigating' | 'resolved' | 'closed';
+  createdAt: Date;
+  updatedAt: Date;
+}
+

@@ -11,7 +11,7 @@ import { clearPendingNotifications } from '@/utils/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function BuyerRequestsScreen() {
   const { user } = useAuth();
@@ -19,14 +19,17 @@ export default function BuyerRequestsScreen() {
   const [requests, setRequests] = useState<ProductRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [sellerNamesById, setSellerNamesById] = useState<Record<string, string>>({});
   const previousStatusesRef = useRef<Record<string, string>>({});
 
-  // Clear pending notifications when user visits the screen
+  // Clear notifications immediately when screen is focused
   useFocusEffect(
     useCallback(() => {
-      if (!user?.id) return;
-      clearPendingNotifications(user.id);
+      if (user?.id) {
+        // Clear immediately - don't await to avoid delay
+        clearPendingNotifications(user.id).catch(console.error);
+      }
     }, [user?.id])
   );
 
@@ -129,38 +132,87 @@ export default function BuyerRequestsScreen() {
     </View>
   );
 
+  const pendingRequests = requests.filter((r) => r.status === 'pending');
+  const approvedRequests = requests.filter((r) => r.status === 'approved');
+  const rejectedRequests = requests.filter((r) => r.status === 'rejected');
+
+  const getFiltered = () => {
+    switch (filter) {
+      case 'pending':
+        return pendingRequests;
+      case 'approved':
+        return approvedRequests;
+      case 'rejected':
+        return rejectedRequests;
+      default:
+        return requests;
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Reload seller names for displayed requests
+    const uniqueSellerIds = Array.from(new Set(requests.map((r) => r.sellerId)));
+    await Promise.all(
+      uniqueSellerIds.map(async (id) => {
+        try {
+          const seller = await getSeller(id);
+          setSellerNamesById((prev) => ({ ...prev, [id]: seller.businessName }));
+        } catch {
+          setSellerNamesById((prev) => ({ ...prev, [id]: 'Unknown Seller' }));
+        }
+      })
+    );
+    setRefreshing(false);
+  };
+
   return (
     <View style={styles.container}>
       {requests.length === 0 ? (
         <EmptyState title="No Requests Yet" description="Your product requests will appear here." />
       ) : (
-        <FlatList
-          data={requests}
-          renderItem={renderItem}
-          keyExtractor={(i) => i.id}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={async () => {
-                setRefreshing(true);
-                // Reload seller names for displayed requests
-                const uniqueSellerIds = Array.from(new Set(requests.map((r) => r.sellerId)));
-                await Promise.all(
-                  uniqueSellerIds.map(async (id) => {
-                    try {
-                      const seller = await getSeller(id);
-                      setSellerNamesById((prev) => ({ ...prev, [id]: seller.businessName }));
-                    } catch {
-                      setSellerNamesById((prev) => ({ ...prev, [id]: 'Unknown Seller' }));
-                    }
-                  })
-                );
-                setRefreshing(false);
-              }} 
-            />
-          }
-        />
+        <>
+          {/* Filters */}
+          <View style={styles.filtersRow}>
+            <TouchableOpacity
+              style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
+              onPress={() => setFilter('all')}
+            >
+              <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>All ({requests.length})</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterChip, filter === 'pending' && styles.filterChipActive]}
+              onPress={() => setFilter('pending')}
+            >
+              <Text style={[styles.filterText, filter === 'pending' && styles.filterTextActive]}>Pending ({pendingRequests.length})</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterChip, filter === 'approved' && styles.filterChipActive]}
+              onPress={() => setFilter('approved')}
+            >
+              <Text style={[styles.filterText, filter === 'approved' && styles.filterTextActive]}>Approved ({approvedRequests.length})</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterChip, filter === 'rejected' && styles.filterChipActive]}
+              onPress={() => setFilter('rejected')}
+            >
+              <Text style={[styles.filterText, filter === 'rejected' && styles.filterTextActive]}>Rejected ({rejectedRequests.length})</Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={getFiltered()}
+            renderItem={renderItem}
+            keyExtractor={(i) => i.id}
+            contentContainerStyle={styles.list}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={handleRefresh} 
+              />
+            }
+          />
+        </>
       )}
     </View>
   );
@@ -168,6 +220,32 @@ export default function BuyerRequestsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  filtersRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: Colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  filterChipActive: {
+    backgroundColor: Colors.primary,
+  },
+  filterText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  filterTextActive: {
+    color: '#FFF',
+  },
   list: { padding: 16 },
   card: {
     backgroundColor: '#FFFFFF',

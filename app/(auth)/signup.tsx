@@ -33,7 +33,11 @@ export default function SignupScreen() {
   // Redirect when user becomes available after signup
   useEffect(() => {
     if (signupSuccess && user && !authLoading) {
-      router.replace('/');
+      // Small delay to ensure all state is updated
+      const timer = setTimeout(() => {
+        router.replace('/');
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [signupSuccess, user, authLoading]);
 

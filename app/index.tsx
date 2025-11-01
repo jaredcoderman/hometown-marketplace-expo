@@ -10,8 +10,8 @@ export default function Index() {
   const { location, loading: locationLoading } = useLocation();
   const { mode, loading: modeLoading } = useViewMode();
 
-  // Show loading while checking auth state, location, or view mode
-  if (authLoading || locationLoading || modeLoading) {
+  // Show loading while checking auth state or location
+  if (authLoading || locationLoading) {
     return (
       <View style={{ flex: 1 }}>
         <LoadingSpinner fullScreen message="Loading..." />
@@ -29,8 +29,15 @@ export default function Index() {
     return <Redirect href="/(auth)/onboarding" />;
   }
 
-  // For sellers, check view mode to determine where to redirect
+  // For sellers, wait for view mode to load, then check where to redirect
   if (user.userType === 'seller') {
+    if (modeLoading) {
+      return (
+        <View style={{ flex: 1 }}>
+          <LoadingSpinner fullScreen message="Loading..." />
+        </View>
+      );
+    }
     if (mode === 'buyer') {
       return <Redirect href="/(buyer)/dashboard" />;
     } else {
@@ -38,7 +45,7 @@ export default function Index() {
     }
   }
 
-  // Buyers always go to buyer dashboard
+  // Buyers always go to buyer dashboard (don't need to wait for view mode)
   return <Redirect href="/(buyer)/dashboard" />;
 }
 

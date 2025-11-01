@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -6,17 +7,16 @@ import Colors from '@/constants/Colors';
 import { useToast } from '@/contexts/ToastContext';
 import { deleteProduct, getProduct, toggleProductStock } from '@/services/product.service';
 import { Product } from '@/types';
-import { confirmAsync } from '@/utils/dialogs';
 import { formatPrice } from '@/utils/formatters';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Image,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
+    Image,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View
 } from 'react-native';
 
 export default function SellerProductDetailScreen() {
@@ -27,6 +27,8 @@ export default function SellerProductDetailScreen() {
   const [quantityInput, setQuantityInput] = useState<string>('');
   const scrollRef = useRef<ScrollView>(null);
   const [qtyInputY, setQtyInputY] = useState(0);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { show } = useToast();
 
   useEffect(() => {
@@ -83,20 +85,24 @@ export default function SellerProductDetailScreen() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!product) return;
+    setConfirmDeleteVisible(true);
+  };
 
-    const confirmed = await confirmAsync('Are you sure you want to delete this product? This action cannot be undone.');
-    
-    if (confirmed) {
-      try {
-        await deleteProduct(product.id);
-        // Navigate immediately without showing success alert
-        router.back();
-      } catch (error: any) {
-        console.error('Error deleting product:', error);
-        show('Failed to delete product', 'error');
-      }
+  const confirmDelete = async () => {
+    if (!product) return;
+    setDeleting(true);
+    try {
+      await deleteProduct(product.id);
+      // Navigate immediately without showing success alert
+      router.back();
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      show('Failed to delete product', 'error');
+      setConfirmDeleteVisible(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -227,6 +233,17 @@ export default function SellerProductDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <ConfirmModal
+        visible={confirmDeleteVisible}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDeleteVisible(false)}
+        loading={deleting}
+      />
     </>
   );
 }

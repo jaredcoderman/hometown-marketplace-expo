@@ -3,18 +3,30 @@ import AppColors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { subscribeToBuyerRequests } from '@/services/request.service';
-import { addPendingNotification, getPendingNotificationIds } from '@/utils/notifications';
+import { addPendingNotification, clearPendingNotifications, getPendingNotificationIds } from '@/utils/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Tabs } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function BuyerLayout() {
+  const { user } = useAuth();
+
   function RequestsIconWithBadge({ color }: { color: string }) {
     const { user } = useAuth();
     const [count, setCount] = useState(0);
     const previousStatusesRef = useRef<Record<string, string>>({});
     const isFirstLoadRef = useRef(true);
+
+    // Helper function to update count from AsyncStorage
+    const updateCountFromStorage = async () => {
+      if (!user?.id) {
+        setCount(0);
+        return;
+      }
+      const pendingIds = await getPendingNotificationIds(user.id);
+      setCount(pendingIds.size);
+    };
 
     useEffect(() => {
       if (!user?.id) {
@@ -35,8 +47,7 @@ export default function BuyerLayout() {
           isFirstLoadRef.current = false;
           
           // Get existing pending notifications count
-          const pendingIds = await getPendingNotificationIds(user.id);
-          setCount(pendingIds.size);
+          await updateCountFromStorage();
           return;
         }
 
@@ -59,11 +70,17 @@ export default function BuyerLayout() {
         );
 
         // Get current pending notifications count
-        const pendingIds = await getPendingNotificationIds(user.id);
-        setCount(pendingIds.size);
+        await updateCountFromStorage();
       });
 
-      return () => unsubscribe();
+      // Also periodically check AsyncStorage to catch cleared notifications
+      // This ensures badge updates immediately when notifications are cleared
+      const intervalId = setInterval(updateCountFromStorage, 500); // Check every half second for faster updates
+
+      return () => {
+        unsubscribe();
+        clearInterval(intervalId);
+      };
     }, [user?.id]);
 
     return (
@@ -180,6 +197,14 @@ export default function BuyerLayout() {
         options={{
           title: 'Requests',
           tabBarIcon: ({ color }) => <RequestsIconWithBadge color={color} />,
+          listeners: {
+            tabPress: () => {
+              // Clear notifications immediately when tab is pressed
+              if (user?.id) {
+                clearPendingNotifications(user.id);
+              }
+            },
+          },
         }}
       />
       <Tabs.Screen

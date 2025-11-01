@@ -26,7 +26,11 @@ export default function LoginScreen() {
   // Redirect when user becomes available after login
   useEffect(() => {
     if (loginSuccess && user && !authLoading) {
-      router.replace('/');
+      // Small delay to ensure all state is updated
+      const timer = setTimeout(() => {
+        router.replace('/');
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [loginSuccess, user, authLoading]);
 

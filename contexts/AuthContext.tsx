@@ -4,10 +4,10 @@ import { LoginData, SignupData, User } from '@/types';
 import { prefetchBuyerHomeAssets } from '@/utils/prefetch';
 import type { Auth as FirebaseAuthType } from 'firebase/auth';
 import {
-  User as FirebaseUser,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut, getAuth, onAuthStateChanged,
-  signInWithEmailAndPassword
+    User as FirebaseUser,
+    createUserWithEmailAndPassword,
+    signOut as firebaseSignOut, getAuth, onAuthStateChanged,
+    signInWithEmailAndPassword
 } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -37,8 +37,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   } catch {}
 
   useEffect(() => {
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    
     const unsubscribe = onAuthStateChanged(authInstance, async (firebaseUser) => {
+      // Clear any pending retry when auth state changes
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+        retryTimeoutId = null;
+      }
       
+      setLoading(true);
       setFirebaseUser(firebaseUser);
       
       if (firebaseUser) {
@@ -52,32 +60,96 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const radius = locationCtx?.radiusMiles;
             prefetchBuyerHomeAssets({ location: loc, radiusMiles: radius });
           }
+          setLoading(false);
         } catch (error) {
-          // Auto-create a minimal user profile if missing (e.g., user pre-existed before rules)
-          try {
-            const inferredName = firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User');
-            const newUser: Omit<User, 'id'> = {
-              email: firebaseUser.email || '',
-              name: inferredName,
-              userType: 'buyer',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-            await createUser(firebaseUser.uid, newUser);
-            const created = await getUser(firebaseUser.uid);
-            setUser(created);
-          } catch (e) {
-            setUser(null);
+          // Only auto-create a user profile if we're CERTAIN the document doesn't exist
+          // getUser() throws "User not found" when the document doesn't exist
+          // Any other error (network, permission, etc.) means we should retry, not create
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          
+          // Only auto-create if the error is exactly "User not found"
+          if (errorMessage === 'User not found') {
+            // Auto-create a minimal user profile if missing (e.g., user pre-existed before rules)
+            try {
+              const inferredName = firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User');
+              const newUser: Omit<User, 'id'> = {
+                email: firebaseUser.email || '',
+                name: inferredName,
+                userType: 'buyer',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+              await createUser(firebaseUser.uid, newUser);
+              const created = await getUser(firebaseUser.uid);
+              setUser(created);
+              setLoading(false);
+            } catch (e) {
+              console.error('Failed to auto-create user:', e);
+              setUser(null);
+              setLoading(false);
+            }
+          } else {
+            // Network, permission, or other error - retry once after a short delay
+            // This handles temporary connection issues on page refresh
+            console.error('Error fetching user (will retry once):', error);
+              retryTimeoutId = setTimeout(async () => {
+              // Verify firebaseUser hasn't changed
+              if (firebaseUser.uid === authInstance.currentUser?.uid) {
+                try {
+                  const userData = await getUser(firebaseUser.uid);
+                  setUser(userData);
+                  if (userData.userType === 'buyer') {
+                    const loc = locationCtx?.location ?? undefined;
+                    const radius = locationCtx?.radiusMiles;
+                    prefetchBuyerHomeAssets({ location: loc, radiusMiles: radius });
+                  }
+                  setLoading(false);
+                } catch (retryError) {
+                  // If retry also fails, check if it's truly not found
+                  const retryErrorMsg = retryError instanceof Error ? retryError.message : String(retryError);
+                  if (retryErrorMsg === 'User not found') {
+                    // Only now create a buyer account after confirming it's truly not found
+                    try {
+                      const inferredName = firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User');
+                      const newUser: Omit<User, 'id'> = {
+                        email: firebaseUser.email || '',
+                        name: inferredName,
+                        userType: 'buyer',
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                      };
+                      await createUser(firebaseUser.uid, newUser);
+                      const created = await getUser(firebaseUser.uid);
+                      setUser(created);
+                      setLoading(false);
+                    } catch (createError) {
+                      console.error('Failed to auto-create user after retry:', createError);
+                      setUser(null);
+                      setLoading(false);
+                    }
+                  } else {
+                    // Still a network/permission error after retry - give up
+                    console.error('Error fetching user after retry (giving up):', retryError);
+                    setUser(null);
+                    setLoading(false);
+                  }
+                }
+              }
+            }, 500);
           }
         }
       } else {
         setUser(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+      }
+    };
   }, []);
 
   const signup = async (data: SignupData) => {

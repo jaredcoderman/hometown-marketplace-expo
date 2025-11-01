@@ -3,16 +3,18 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { Image, Platform } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Image, Platform, TouchableOpacity } from 'react-native';
 import 'react-native-reanimated';
 
+import { BugReportModal } from '@/components/ui/bug-report-modal';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Colors from '@/constants/Colors';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LocationProvider } from '@/contexts/LocationContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { ViewModeProvider } from '@/contexts/ViewModeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -50,8 +52,26 @@ const AutumnTheme = {
   },
 };
 
-export default function RootLayout() {
-  // Only load fonts on native platforms - web uses CSS fonts automatically
+function BugReportButton() {
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  return (
+    <>
+      <TouchableOpacity
+        onPress={() => setModalVisible(true)}
+        style={{
+          marginRight: 16,
+          padding: 4,
+        }}
+      >
+        <Ionicons name="bug-outline" size={24} color={Colors.text} />
+      </TouchableOpacity>
+      <BugReportModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+    </>
+  );
+}
+
+function RootLayoutContent() {
   const [fontsLoaded] = useFonts(
     Platform.OS !== 'web'
       ? {
@@ -71,33 +91,40 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <LocationProvider>
-        <ViewModeProvider>
-          <ThemeProvider value={AutumnTheme}>
-            <ToastProvider>
+    <LocationProvider>
+      <ViewModeProvider>
+        <ThemeProvider value={AutumnTheme}>
+          <ToastProvider>
             <Stack
-            screenOptions={{
-              headerShown: true,
-              headerTitleAlign: 'center',
-              headerTitle: () => (
-                <Image
-                  source={require('@/assets/images/hometown-logo.png')}
-                  style={{ height: 36, width: 36, resizeMode: 'contain' }}
-                />
-              ),
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(buyer)" />
-            <Stack.Screen name="(seller)" />
-          </Stack>
-          <StatusBar style="dark" />
-            </ToastProvider>
-          </ThemeProvider>
-        </ViewModeProvider>
-      </LocationProvider>
+              screenOptions={{
+                headerShown: true,
+                headerTitleAlign: 'center',
+                headerTitle: () => (
+                  <Image
+                    source={require('@/assets/images/hometown-logo.png')}
+                    style={{ height: 36, width: 36, resizeMode: 'contain' }}
+                  />
+                ),
+                headerRight: () => <BugReportButton />,
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(buyer)" />
+              <Stack.Screen name="(seller)" />
+            </Stack>
+            <StatusBar style="dark" />
+          </ToastProvider>
+        </ThemeProvider>
+      </ViewModeProvider>
+    </LocationProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutContent />
     </AuthProvider>
   );
 }

@@ -2,10 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { createProduct } from '@/services/product.service';
 import { getSellerByUserId } from '@/services/seller.service';
 import { pickMultipleImages, uploadProductImages } from '@/services/storage.service';
-import { confirmAsync, showAlert } from '@/utils/dialogs';
+import { showAlert } from '@/utils/dialogs';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React, { useState } from 'react';
@@ -22,6 +23,7 @@ import {
 
 export default function CreateProductScreen() {
   const { user } = useAuth();
+  const { show } = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -82,7 +84,7 @@ export default function CreateProductScreen() {
       }
 
       // Create product
-      const productId = await createProduct({
+      await createProduct({
         sellerId: seller.id,
         name: name.trim(),
         description: description.trim(),
@@ -93,7 +95,6 @@ export default function CreateProductScreen() {
         quantity: quantity ? parseInt(quantity) : undefined,
       });
 
-      
       // Clear all fields
       setName('');
       setDescription('');
@@ -103,13 +104,8 @@ export default function CreateProductScreen() {
       setImageUris([]);
       setErrors({});
       
-      // Show success message and ask what to do next
-      const viewProduct = await confirmAsync('Product created successfully! Would you like to view it now?');
-      
-      if (viewProduct) {
-        router.push(`/(seller)/products/${productId}`);
-      }
-      // Otherwise stay on the page with cleared fields to create another product
+      // Show success toast
+      show('Product Created', 'success');
     } catch (error: any) {
       console.error('Error creating product:', error);
       showAlert('Failed to create product', error.message || 'Unknown error');
