@@ -14,8 +14,8 @@ import {
     where
 } from 'firebase/firestore';
 import {
-    sendRequestCreatedEmailToBuyerAPI,
-    sendRequestCreatedEmailToSellerAPI
+    sendRequestCreatedEmailToSellerAPI,
+    sendRequestStatusEmailAPI
 } from './email-api.service';
 import { getSeller } from './seller.service';
 import { getUser } from './user.service';
@@ -73,32 +73,6 @@ export async function createRequest(
       
       const sellerUser = await getUser(seller.userId);
       console.log('[EMAIL] Seller user retrieved:', { email: sellerUser.email, userId: seller.userId });
-
-      // Send email to buyer
-      console.log('[EMAIL] Sending email to buyer:', requestData.buyerEmail);
-      try {
-        const buyerEmailResult = await sendRequestCreatedEmailToBuyerAPI(
-          requestData.buyerEmail,
-          requestData.buyerName,
-          seller.businessName,
-          requestData.productName,
-          requestData.quantity,
-          requestData.productPrice,
-          requestData.totalPrice,
-          requestData.message
-        );
-        console.log('[EMAIL] Buyer email result:', buyerEmailResult);
-        if (!buyerEmailResult.success) {
-          console.error('[EMAIL] Buyer email failed:', buyerEmailResult.error);
-        }
-      } catch (buyerError: any) {
-        console.error('[EMAIL] Buyer email exception:', buyerError);
-        console.error('[EMAIL] Buyer email error details:', {
-          message: buyerError?.message,
-          code: buyerError?.code,
-          stack: buyerError?.stack,
-        });
-      }
 
       // Send email to seller
       console.log('[EMAIL] Sending email to seller:', sellerUser.email);
@@ -196,6 +170,40 @@ export async function updateRequestStatus(
   await updateDoc(docRef, {
     status,
     updatedAt: serverTimestamp(),
+  });
+
+  // Send email notification to buyer (fire and forget)
+  Promise.resolve().then(async () => {
+    try {
+      console.log('[EMAIL] ===== SENDING REQUEST STATUS EMAIL =====');
+      
+      // Fetch the request to get buyer and seller info
+      const requestData = await getRequest(requestId);
+      const seller = await getSeller(requestData.sellerId);
+      
+      console.log('[EMAIL] Sending status email to buyer:', requestData.buyerEmail);
+      const emailResult = await sendRequestStatusEmailAPI(
+        requestData.buyerEmail,
+        requestData.buyerName,
+        requestData.productName,
+        seller.businessName,
+        requestData.quantity,
+        requestData.productPrice,
+        requestData.totalPrice,
+        requestData.message,
+        status
+      );
+      
+      console.log('[EMAIL] Status email result:', emailResult);
+      if (!emailResult.success) {
+        console.error('[EMAIL] Status email failed:', emailResult.error);
+      }
+    } catch (error: any) {
+      console.error('[EMAIL] Failed to send status email:', error);
+      // Don't fail the status update if email fails
+    }
+  }).catch((err) => {
+    console.error('[EMAIL] Unhandled error in status email promise:', err);
   });
 }
 

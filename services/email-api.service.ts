@@ -62,6 +62,10 @@ export async function sendRequestStatusEmailAPI(
   buyerName: string,
   productName: string,
   sellerName: string,
+  quantity: number,
+  productPrice: number,
+  totalPrice: number,
+  message: string,
   status: 'approved' | 'rejected'
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
@@ -71,6 +75,10 @@ export async function sendRequestStatusEmailAPI(
       buyerName,
       productName,
       sellerName,
+      quantity,
+      productPrice,
+      totalPrice,
+      message,
       status,
     });
     return result.data as { success: boolean; id?: string; error?: string };

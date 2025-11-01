@@ -215,10 +215,11 @@ export const sendRequestStatusEmail = functionsV2.https.onCall(
   { secrets: [resendApiKeySecret] },
   async (request) => {
     const data = request.data;
-    const { buyerEmail, buyerName, productName, sellerName, status } = data;
+    const { buyerEmail, buyerName, productName, sellerName, quantity, productPrice, totalPrice, message, status } = data;
     const statusText = status === "approved" ? "approved" : "rejected";
     const statusColor = status === "approved" ? "#689F38" : "#C62828";
     const statusIcon = status === "approved" ? "✓" : "✗";
+    const statusEmoji = status === "approved" ? "🎉" : "😔";
 
     const html = `
       <!DOCTYPE html>
@@ -233,19 +234,75 @@ export const sendRequestStatusEmail = functionsV2.https.onCall(
           </div>
           <div style="background-color: #FEFDFB; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #EFEBE9;">
             <p>Hi ${buyerName},</p>
-            <div style="background-color: ${statusColor}20; border-left: 4px solid ${statusColor}; padding: 15px; margin: 20px 0; border-radius: 4px;">
-              <p style="margin: 0; font-size: 18px;">
-                <strong style="color: ${statusColor};">${statusIcon} Your request for "${productName}" has been ${statusText}.</strong>
+            <div style="background-color: ${statusColor}20; border-left: 4px solid ${statusColor}; padding: 20px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0; font-size: 20px; text-align: center;">
+                <strong style="color: ${statusColor};">${statusEmoji} ${statusIcon} Your request has been ${statusText}!</strong>
               </p>
             </div>
-            <p><strong>Seller:</strong> ${sellerName}</p>
-            <p><strong>Product:</strong> ${productName}</p>
-            ${
-              status === "approved"
-                ? "<p>Great news! Your request has been approved. You can proceed with the purchase.</p>"
-                : "<p>Unfortunately, your request could not be approved at this time. You can try requesting a different product or quantity.</p>"
-            }
-            <p style="margin-top: 30px;">Best regards,<br>The Hometown Marketplace Team</p>
+            
+            <div style="background-color: #F5F5F5; padding: 20px; margin: 20px 0; border-radius: 8px;">
+              <h2 style="margin-top: 0; color: #D2691E; font-size: 18px;">Request Details</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Seller:</strong></td>
+                  <td style="padding: 8px 0; text-align: right;">${sellerName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Product:</strong></td>
+                  <td style="padding: 8px 0; text-align: right;">${productName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Quantity:</strong></td>
+                  <td style="padding: 8px 0; text-align: right;">${quantity}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Price per item:</strong></td>
+                  <td style="padding: 8px 0; text-align: right;">$${productPrice.toFixed(2)}</td>
+                </tr>
+                <tr style="border-top: 2px solid #ddd;">
+                  <td style="padding: 12px 0 8px 0; color: #333;"><strong>Total:</strong></td>
+                  <td style="padding: 12px 0 8px 0; text-align: right; font-size: 18px; color: #D2691E;"><strong>$${totalPrice.toFixed(2)}</strong></td>
+                </tr>
+              </table>
+            </div>
+
+            ${message ? `
+            <div style="background-color: #FFF3E0; border-left: 4px solid #FF9800; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0; color: #E65100;"><strong>Your Message:</strong></p>
+              <p style="margin: 8px 0 0 0; color: #5D4037;">"${message}"</p>
+            </div>
+            ` : ''}
+
+            <div style="margin: 30px 0;">
+              ${
+                status === "approved"
+                  ? `
+                  <p style="font-size: 16px; color: ${statusColor};"><strong>✓ Great news!</strong> Your request has been approved by the seller.</p>
+                  <p>The seller will coordinate with you to complete the purchase. You can contact them directly through the Hometown Marketplace app.</p>
+                  <p style="background-color: #E8F5E9; padding: 15px; border-radius: 4px; color: #2E7D32; margin: 20px 0;">
+                    <strong>Next Steps:</strong><br>
+                    1. Review your order details above<br>
+                    2. Contact the seller to arrange pickup/delivery<br>
+                    3. Complete payment as agreed
+                  </p>
+                  `
+                  : `
+                  <p style="font-size: 16px; color: ${statusColor};"><strong>Unfortunately, your request could not be approved at this time.</strong></p>
+                  <p>This could be due to limited inventory, the item is no longer available, or other circumstances. We encourage you to:</p>
+                  <ul style="background-color: #FFEBEE; padding: 20px 20px 20px 40px; border-radius: 4px; color: #C62828; margin: 20px 0;">
+                    <li>Browse other products from this seller</li>
+                    <li>Try requesting a different quantity</li>
+                    <li>Explore similar products from other local sellers</li>
+                  </ul>
+                  <p>Thank you for using Hometown Marketplace!</p>
+                  `
+              }
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; padding-top: 30px; border-top: 1px solid #E0E0E0;">
+              <p style="margin: 0; color: #666;">Questions? Reply to this email or visit Hometown Marketplace</p>
+              <p style="margin: 10px 0 0 0;">Best regards,<br><strong>The Hometown Marketplace Team</strong></p>
+            </div>
           </div>
         </body>
       </html>
@@ -256,12 +313,41 @@ Request ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}
 
 Hi ${buyerName},
 
-Your request for "${productName}" from ${sellerName} has been ${statusText}.
+Your request has been ${statusText}!
+
+${status === "approved" ? statusEmoji : statusEmoji}
+
+REQUEST DETAILS:
+Seller: ${sellerName}
+Product: ${productName}
+Quantity: ${quantity}
+Price per item: $${productPrice.toFixed(2)}
+Total: $${totalPrice.toFixed(2)}
+
+${message ? `Your Message: "${message}"\n` : ''}
 
 ${
   status === "approved"
-    ? "Great news! Your request has been approved. You can proceed with the purchase."
-    : "Unfortunately, your request could not be approved at this time."
+    ? `
+✓ Great news! Your request has been approved by the seller.
+
+The seller will coordinate with you to complete the purchase. You can contact them directly through the Hometown Marketplace app.
+
+Next Steps:
+1. Review your order details above
+2. Contact the seller to arrange pickup/delivery
+3. Complete payment as agreed
+    `
+    : `
+Unfortunately, your request could not be approved at this time.
+
+This could be due to limited inventory, the item is no longer available, or other circumstances. We encourage you to:
+- Browse other products from this seller
+- Try requesting a different quantity
+- Explore similar products from other local sellers
+
+Thank you for using Hometown Marketplace!
+    `
 }
 
 Best regards,
