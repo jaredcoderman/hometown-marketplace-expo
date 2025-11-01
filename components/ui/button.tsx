@@ -11,14 +11,15 @@ import {
 import Colors from '@/constants/Colors';
 
 interface ButtonProps {
-  title: string;
+  title?: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
   size?: 'small' | 'medium' | 'large';
   loading?: boolean;
   disabled?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  children?: React.ReactNode;
 }
 
 export function Button({
@@ -30,11 +31,11 @@ export function Button({
   disabled = false,
   style,
   textStyle,
+  children,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
   const handlePress = () => {
-    console.log('Button pressed:', title);
     if (!isDisabled) {
       onPress();
     }
@@ -56,11 +57,11 @@ export function Button({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'outline' ? Colors.primary : '#FFFFFF'}
+          color={variant === 'outline' || variant === 'ghost' ? Colors.primary : '#FFFFFF'}
         />
       ) : (
         <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>
-          {title}
+          {children || title}
         </Text>
       )}
     </Pressable>
@@ -92,6 +93,10 @@ const styles = StyleSheet.create({
   },
   danger: {
     backgroundColor: Colors.error,
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
   // Sizes
   small: {
@@ -125,6 +130,9 @@ const styles = StyleSheet.create({
   },
   dangerText: {
     color: '#FFFFFF',
+  },
+  ghostText: {
+    color: Colors.primary,
   },
 });
 
