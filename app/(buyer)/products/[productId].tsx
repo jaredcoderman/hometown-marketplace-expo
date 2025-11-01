@@ -225,8 +225,8 @@ export default function ProductDetailScreen() {
       setReviewComment('');
       setReviewRating(5);
       
-      // Reload reviews and recheck eligibility
-      await Promise.all([loadReviews(), checkReviewEligibility()]);
+      // Reload product, reviews and recheck eligibility
+      await Promise.all([loadProductData(), loadReviews(), checkReviewEligibility()]);
     } catch (error: any) {
       show(error.message || 'Failed to submit review', 'error');
     } finally {
@@ -376,15 +376,35 @@ export default function ProductDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Reviews</Text>
-              {product.rating && product.rating > 0 && (
-                <View style={styles.ratingBadge}>
-                  <StarRating rating={product.rating} size={16} readonly />
-                  <Text style={styles.ratingText}>
-                    {product.rating.toFixed(1)} ({product.reviewCount || 0})
+            </View>
+
+            {/* Detailed Rating Display */}
+            {product.rating && product.rating > 0 && reviews.length > 0 && (
+              <View style={styles.ratingBreakdown}>
+                <View style={styles.ratingOverview}>
+                  <Text style={styles.ratingLarge}>{product.rating.toFixed(1)}</Text>
+                  <StarRating rating={product.rating} size={24} readonly />
+                  <Text style={styles.reviewCountText}>
+                    Based on {product.reviewCount} {product.reviewCount === 1 ? 'review' : 'reviews'}
                   </Text>
                 </View>
-              )}
-            </View>
+                <View style={styles.ratingBars}>
+                  {[5, 4, 3, 2, 1].map((stars) => {
+                    const count = reviews.filter(r => r.rating === stars).length;
+                    const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                    return (
+                      <View key={stars} style={styles.ratingBarRow}>
+                        <Text style={styles.ratingBarLabel}>{stars} star</Text>
+                        <View style={styles.ratingBarContainer}>
+                          <View style={[styles.ratingBarFill, { width: `${percentage}%` }]} />
+                        </View>
+                        <Text style={styles.ratingBarCount}>{count}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             {/* Write Review Button - Only show if buyer can review */}
             {canReview && !hasReviewed && !showReviewForm && (
@@ -780,6 +800,58 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.text,
+  },
+  ratingBreakdown: {
+    backgroundColor: Colors.backgroundSecondary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  ratingOverview: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  ratingLarge: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 8,
+  },
+  reviewCountText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginTop: 8,
+  },
+  ratingBars: {
+    gap: 8,
+  },
+  ratingBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ratingBarLabel: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    width: 50,
+  },
+  ratingBarContainer: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  ratingBarFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: 4,
+  },
+  ratingBarCount: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    width: 30,
+    textAlign: 'right',
   },
   writeReviewButton: {
     marginBottom: 16,
