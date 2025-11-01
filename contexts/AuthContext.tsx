@@ -7,9 +7,9 @@ import {
     User as FirebaseUser,
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut, getAuth, onAuthStateChanged,
+    reload,
     sendEmailVerification,
-    signInWithEmailAndPassword,
-    reload
+    signInWithEmailAndPassword
 } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
