@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { getFavoritesCount, isProductFavorited, toggleFavorite } from '@/services/favorite.service';
 import { getProduct } from '@/services/product.service';
-import { getReviewsByProduct, canBuyerReviewProduct, hasBuyerReviewedProduct, createReview } from '@/services/review.service';
+import { canBuyerReviewProduct, createReview, getReviewsByProduct, hasBuyerReviewedProduct } from '@/services/review.service';
 import { getSeller } from '@/services/seller.service';
 import { Product, ProductReview, Seller } from '@/types';
 import { formatPrice } from '@/utils/formatters';

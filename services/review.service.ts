@@ -7,11 +7,10 @@ import {
     query,
     serverTimestamp,
     setDoc,
-    updateDoc,
     where
 } from 'firebase/firestore';
+import { updateProduct } from './product.service';
 import { getRequestsByBuyer } from './request.service';
-import { getProduct, updateProduct } from './product.service';
 
 const REVIEWS_COLLECTION = 'reviews';
 
@@ -93,16 +92,20 @@ export async function createReview(
 
   // Create the review
   const reviewRef = doc(collection(db, REVIEWS_COLLECTION));
-  const reviewData = {
+  const reviewData: any = {
     productId,
     buyerId,
     buyerName,
-    buyerAvatar,
     rating,
     comment,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
+
+  // Only include buyerAvatar if it's defined
+  if (buyerAvatar) {
+    reviewData.buyerAvatar = buyerAvatar;
+  }
 
   await setDoc(reviewRef, reviewData);
 
