@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - **Venmo Payment Integration**: Sellers can now add their Venmo username to their profile for payment processing. Venmo information is displayed to buyers when viewing requests and seller profiles.
 
 ### Improvements
+- **Image Optimization**: Implemented automatic image compression and resizing for all uploads (product images, avatars, etc.) to reduce storage costs and improve loading performance
 - **Email Templates**: Redesigned email templates with professional styling, detailed order information, and better visual hierarchy
 - **Request Notifications**: Optimized email notification flow - sellers notified when requests are created, buyers notified when requests are approved/rejected
 - **Profile Management**: Sellers in "buy mode" are now automatically redirected to their seller profile page when accessing the profile tab, ensuring they see the appropriate profile view.

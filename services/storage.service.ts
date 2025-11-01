@@ -1,14 +1,44 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from '@/config/firebase';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+
+/**
+ * Optimize and resize image before upload
+ */
+async function optimizeImage(
+  uri: string,
+  maxWidth: number = 1200,
+  maxHeight: number = 1200,
+  compress: number = 0.8
+): Promise<string> {
+  try {
+    const manipResult = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: maxWidth, height: maxHeight } }],
+      { compress, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    return manipResult.uri;
+  } catch (error) {
+    console.error('Error optimizing image:', error);
+    // If optimization fails, return original URI
+    return uri;
+  }
+}
 
 export async function uploadImage(
   uri: string,
-  path: string
+  path: string,
+  optimize: boolean = true,
+  maxWidth: number = 1200,
+  maxHeight: number = 1200
 ): Promise<string> {
   try {
+    // Optimize image if requested
+    const optimizedUri = optimize ? await optimizeImage(uri, maxWidth, maxHeight) : uri;
+
     // Fetch the image data
-    const response = await fetch(uri);
+    const response = await fetch(optimizedUri);
     const blob = await response.blob();
 
     // Create a reference to the storage location
@@ -43,7 +73,7 @@ export async function uploadUserAvatar(
   imageUri: string
 ): Promise<string> {
   const path = `users/${userId}/avatar_${Date.now()}`;
-  return uploadImage(imageUri, path);
+  return uploadImage(imageUri, path, true, 400, 400); // 400px max for avatars
 }
 
 export async function deleteImage(imageUrl: string): Promise<void> {
