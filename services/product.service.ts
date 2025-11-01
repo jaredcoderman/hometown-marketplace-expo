@@ -122,6 +122,8 @@ function docToProduct(doc: any): Product {
     quantity: data.quantity,
     emoji: data.emoji,
     tags: data.tags || [],
+    rating: data.rating || 0,
+    reviewCount: data.reviewCount || 0,
     createdAt: data.createdAt?.toDate() || new Date(),
     updatedAt: data.updatedAt?.toDate() || new Date(),
   };

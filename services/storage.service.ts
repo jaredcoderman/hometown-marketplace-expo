@@ -1,7 +1,7 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from '@/config/firebase';
-import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
+import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 /**
  * Optimize and resize image before upload

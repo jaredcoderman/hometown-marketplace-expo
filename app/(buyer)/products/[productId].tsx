@@ -2,13 +2,15 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { StarRating } from '@/components/ui/star-rating';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { getFavoritesCount, isProductFavorited, toggleFavorite } from '@/services/favorite.service';
 import { getProduct } from '@/services/product.service';
+import { getReviewsByProduct, canBuyerReviewProduct, hasBuyerReviewedProduct, createReview } from '@/services/review.service';
 import { getSeller } from '@/services/seller.service';
-import { Product, Seller } from '@/types';
+import { Product, ProductReview, Seller } from '@/types';
 import { formatPrice } from '@/utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -36,6 +38,10 @@ export default function ProductDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState<number>(0);
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [canReview, setCanReview] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   useEffect(() => {
     loadProductData();
@@ -103,10 +109,50 @@ export default function ProductDetailScreen() {
     }
   };
 
+  const loadReviews = async () => {
+    if (!productId) return;
+
+    setLoadingReviews(true);
+    try {
+      const reviewsData = await getReviewsByProduct(productId);
+      setReviews(reviewsData);
+    } catch (error: any) {
+      console.error('Error loading reviews:', error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const checkReviewEligibility = async () => {
+    if (!productId || !user?.id) return;
+
+    try {
+      const [canReviewProduct, reviewedProduct] = await Promise.all([
+        canBuyerReviewProduct(user.id, productId),
+        hasBuyerReviewedProduct(user.id, productId)
+      ]);
+      setCanReview(canReviewProduct);
+      setHasReviewed(reviewedProduct);
+    } catch (error: any) {
+      console.error('Error checking review eligibility:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadReviews();
+    checkReviewEligibility();
+  }, [productId, user?.id]);
+
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [quantity, setQuantity] = useState('1');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Review form state
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const handleContactSeller = () => {
     setShowRequestForm(!showRequestForm);
@@ -152,6 +198,39 @@ export default function ProductDetailScreen() {
       show('Failed to send request', 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!productId || !user) return;
+
+    if (!reviewComment.trim()) {
+      show('Please write a review comment', 'error');
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      await createReview(
+        productId,
+        user.id,
+        user.name,
+        user.avatar,
+        reviewRating,
+        reviewComment.trim()
+      );
+
+      show('Review submitted successfully!', 'success');
+      setShowReviewForm(false);
+      setReviewComment('');
+      setReviewRating(5);
+      
+      // Reload reviews and recheck eligibility
+      await Promise.all([loadReviews(), checkReviewEligibility()]);
+    } catch (error: any) {
+      show(error.message || 'Failed to submit review', 'error');
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -291,6 +370,119 @@ export default function ProductDetailScreen() {
                 )}
               </View>
             </Pressable>
+          </View>
+
+          {/* Reviews Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Reviews</Text>
+              {product.rating && product.rating > 0 && (
+                <View style={styles.ratingBadge}>
+                  <StarRating rating={product.rating} size={16} readonly />
+                  <Text style={styles.ratingText}>
+                    {product.rating.toFixed(1)} ({product.reviewCount || 0})
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Write Review Button - Only show if buyer can review */}
+            {canReview && !hasReviewed && !showReviewForm && (
+              <Button
+                title="Write a Review"
+                onPress={() => setShowReviewForm(true)}
+                variant="outline"
+                size="small"
+                style={styles.writeReviewButton}
+              />
+            )}
+
+            {/* Review Form */}
+            {showReviewForm && (
+              <View style={styles.reviewForm}>
+                <Text style={styles.reviewFormTitle}>Write Your Review</Text>
+                
+                <View style={styles.ratingSelector}>
+                  <Text style={styles.ratingLabel}>Rating:</Text>
+                  <StarRating 
+                    rating={reviewRating} 
+                    onRatingChange={setReviewRating}
+                    size={28}
+                  />
+                </View>
+
+                <View style={styles.messageSection}>
+                  <Text style={styles.messageLabel}>Your Review:</Text>
+                  <TextInput
+                    style={styles.messageInput}
+                    value={reviewComment}
+                    onChangeText={setReviewComment}
+                    placeholder="Share your experience with this product..."
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                <View style={styles.reviewFormActions}>
+                  <Button
+                    title="Cancel"
+                    onPress={() => {
+                      setShowReviewForm(false);
+                      setReviewComment('');
+                      setReviewRating(5);
+                    }}
+                    variant="secondary"
+                    style={{ flex: 1 }}
+                  />
+                  <View style={{ width: 12 }} />
+                  <Button
+                    title="Submit Review"
+                    onPress={handleSubmitReview}
+                    loading={submittingReview}
+                    style={{ flex: 1 }}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Reviews List */}
+            {loadingReviews ? (
+              <LoadingSpinner message="Loading reviews..." />
+            ) : reviews.length > 0 ? (
+              <View style={styles.reviewsList}>
+                {reviews.map((review) => (
+                  <View key={review.id} style={styles.reviewCard}>
+                    <View style={styles.reviewHeader}>
+                      <View style={styles.reviewerInfo}>
+                        {review.buyerAvatar ? (
+                          <Image 
+                            source={{ uri: review.buyerAvatar }} 
+                            style={styles.reviewerAvatar}
+                          />
+                        ) : (
+                          <View style={styles.reviewerAvatarPlaceholder}>
+                            <Text style={styles.reviewerAvatarText}>
+                              {review.buyerName.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={styles.reviewerDetails}>
+                          <Text style={styles.reviewerName}>{review.buyerName}</Text>
+                          <Text style={styles.reviewDate}>
+                            {review.createdAt.toLocaleDateString()}
+                          </Text>
+                        </View>
+                      </View>
+                      <StarRating rating={review.rating} size={16} readonly />
+                    </View>
+                    <Text style={styles.reviewComment}>{review.comment}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.noReviewsText}>No reviews yet. Be the first to review!</Text>
+            )}
           </View>
 
           {/* Contact Button */}
@@ -571,6 +763,118 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  // Review styles
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  writeReviewButton: {
+    marginBottom: 16,
+  },
+  reviewForm: {
+    backgroundColor: Colors.backgroundSecondary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  reviewFormTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 16,
+  },
+  ratingSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  ratingLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.text,
+  },
+  reviewFormActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reviewsList: {
+    gap: 16,
+  },
+  reviewCard: {
+    backgroundColor: Colors.backgroundSecondary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  reviewerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  reviewerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  reviewerAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  reviewerAvatarText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  reviewerDetails: {
+    flex: 1,
+  },
+  reviewerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  reviewDate: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  reviewComment: {
+    fontSize: 14,
+    color: Colors.text,
+    lineHeight: 20,
+  },
+  noReviewsText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    padding: 20,
   },
 });
 

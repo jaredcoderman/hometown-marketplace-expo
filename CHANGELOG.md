@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Features
+- **Product Reviews**: Buyers can now leave reviews and ratings for products they've purchased. Only buyers with approved transactions can review products, ensuring authentic feedback. Reviews include star ratings, comments, buyer avatars, and dates.
 - **Email Verification**: Users must now verify their email address before accessing the app, ensuring only real email addresses are used for account creation
 - **Password Visibility Toggle**: Added show/hide password toggle with eye icon on all password input fields for better usability
 - **Email Notification System**: Implemented comprehensive email notifications for request creation and status updates

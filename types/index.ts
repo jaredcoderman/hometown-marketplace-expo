@@ -54,6 +54,8 @@ export interface Product {
   createdAt: Date;
   updatedAt: Date;
   tags?: string[];
+  rating?: number; // average rating (1-5)
+  reviewCount?: number; // number of reviews
 }
 
 export interface ProductWithSeller extends Product {
@@ -107,6 +109,19 @@ export interface ProductRequest {
   totalPrice: number;
   message: string;
   status: 'pending' | 'approved' | 'rejected';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Product Review
+export interface ProductReview {
+  id: string;
+  productId: string;
+  buyerId: string;
+  buyerName: string;
+  buyerAvatar?: string;
+  rating: number; // 1-5
+  comment: string;
   createdAt: Date;
   updatedAt: Date;
 }
