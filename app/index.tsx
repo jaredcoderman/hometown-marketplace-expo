@@ -7,7 +7,7 @@ import { Redirect } from 'expo-router';
 import { View } from 'react-native';
 
 export default function Index() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, firebaseUser, loading: authLoading } = useAuth();
   const { location, loading: locationLoading } = useLocation();
   const { mode, loading: modeLoading } = useViewMode();
   const { mode: adminMode, loading: adminModeLoading } = useAdminView();
@@ -24,6 +24,11 @@ export default function Index() {
   // Not logged in - redirect to auth
   if (!user) {
     return <Redirect href="/(auth)/login" />;
+  }
+
+  // Check if email is verified
+  if (firebaseUser && !firebaseUser.emailVerified) {
+    return <Redirect href="/(auth)/verify-email" />;
   }
 
   // Logged in but no location set - redirect to onboarding

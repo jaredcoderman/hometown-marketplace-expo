@@ -8,13 +8,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 export default function SignupScreen() {
@@ -71,6 +71,8 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await signup({ name, email, password, userType });
+      // Show success message about email verification
+      show('Account created! Please check your email to verify your account.', 'success');
       // Set flag to trigger redirect via useEffect when user state updates
       setSignupSuccess(true);
     } catch (error: any) {

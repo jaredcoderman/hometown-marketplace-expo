@@ -7,7 +7,9 @@ import {
     User as FirebaseUser,
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut, getAuth, onAuthStateChanged,
-    signInWithEmailAndPassword
+    sendEmailVerification,
+    signInWithEmailAndPassword,
+    reload
 } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -19,6 +21,8 @@ interface AuthContextType {
   login: (data: LoginData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
+  refreshFirebaseUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -160,6 +164,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data.password
       );
 
+      // Send email verification
+      await sendEmailVerification(userCredential.user);
+
       // Create user document in Firestore
       const newUser: Omit<User, 'id'> = {
         email: data.email,
@@ -209,6 +216,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resendVerificationEmail = async () => {
+    if (firebaseUser) {
+      try {
+        await sendEmailVerification(firebaseUser);
+      } catch (error: any) {
+        throw new Error(error.message || 'Failed to send verification email');
+      }
+    }
+  };
+
+  const refreshFirebaseUser = async () => {
+    if (firebaseUser) {
+      try {
+        await reload(firebaseUser);
+      } catch (error: any) {
+        throw new Error(error.message || 'Failed to refresh user');
+      }
+    }
+  };
+
   const value: AuthContextType = {
     user,
     firebaseUser,
@@ -217,6 +244,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     logout,
     refreshUser,
+    resendVerificationEmail,
+    refreshFirebaseUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
