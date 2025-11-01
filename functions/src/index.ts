@@ -500,18 +500,66 @@ export const sendRequestCreatedEmailToSeller = functionsV2.https.onCall(
           </div>
           <div style="background-color: #FEFDFB; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #EFEBE9;">
             <p>Hi ${sellerName},</p>
-            <p>You have received a new request for one of your products!</p>
-            <div style="background-color: #E3F2FD; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 4px;">
-              <p style="margin: 0 0 10px 0;"><strong>Product:</strong> ${productName}</p>
-              <p style="margin: 0 0 10px 0;"><strong>Buyer:</strong> ${buyerName}</p>
-              <p style="margin: 0 0 10px 0;"><strong>Buyer Email:</strong> ${buyerEmail}</p>
-              <p style="margin: 0 0 10px 0;"><strong>Quantity:</strong> ${quantity}</p>
-              <p style="margin: 0 0 10px 0;"><strong>Unit Price:</strong> $${productPrice.toFixed(2)}</p>
-              <p style="margin: 0 0 10px 0;"><strong>Total Price:</strong> $${totalPrice.toFixed(2)}</p>
-              ${message ? `<p style="margin: 10px 0 0 0;"><strong>Buyer's Message:</strong> ${message}</p>` : ''}
+            
+            <div style="background-color: #2196F320; border-left: 4px solid #2196F3; padding: 20px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0; font-size: 20px; text-align: center;">
+                <strong style="color: #2196F3;">📬 You have a new request!</strong>
+              </p>
             </div>
-            <p>Please review this request in your Hometown Marketplace dashboard and approve or reject it.</p>
-            <p style="margin-top: 30px;">Best regards,<br>The Hometown Marketplace Team</p>
+            
+            <div style="background-color: #F5F5F5; padding: 20px; margin: 20px 0; border-radius: 8px;">
+              <h2 style="margin-top: 0; color: #D2691E; font-size: 18px;">Request Details</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Product:</strong></td>
+                  <td style="padding: 8px 0; text-align: right;">${productName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Buyer:</strong></td>
+                  <td style="padding: 8px 0; text-align: right;">${buyerName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Quantity:</strong></td>
+                  <td style="padding: 8px 0; text-align: right;">${quantity}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;"><strong>Price per item:</strong></td>
+                  <td style="padding: 8px 0; text-align: right;">$${productPrice.toFixed(2)}</td>
+                </tr>
+                <tr style="border-top: 2px solid #ddd;">
+                  <td style="padding: 12px 0 8px 0; color: #333;"><strong>Total:</strong></td>
+                  <td style="padding: 12px 0 8px 0; text-align: right; font-size: 18px; color: #D2691E;"><strong>$${totalPrice.toFixed(2)}</strong></td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="background-color: #E3F2FD; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0; color: #1565C0;"><strong>Buyer Contact:</strong></p>
+              <p style="margin: 8px 0 0 0; color: #424242;">${buyerEmail}</p>
+            </div>
+
+            ${message ? `
+            <div style="background-color: #FFF3E0; border-left: 4px solid #FF9800; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0; color: #E65100;"><strong>Buyer's Message:</strong></p>
+              <p style="margin: 8px 0 0 0; color: #5D4037;">"${message}"</p>
+            </div>
+            ` : ''}
+
+            <div style="margin: 30px 0;">
+              <p style="font-size: 16px; color: #1976D2;"><strong>Action Required:</strong></p>
+              <p>Please review this request in your Hometown Marketplace dashboard and approve or reject it. The buyer will be notified of your decision via email.</p>
+              <p style="background-color: #E3F2FD; padding: 15px; border-radius: 4px; color: #1565C0; margin: 20px 0;">
+                <strong>Quick Tips:</strong><br>
+                • Check your available inventory<br>
+                • Consider pickup/delivery logistics<br>
+                • Respond promptly to maintain buyer trust
+              </p>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; padding-top: 30px; border-top: 1px solid #E0E0E0;">
+              <p style="margin: 0; color: #666;">Questions? Reply to this email or visit Hometown Marketplace</p>
+              <p style="margin: 10px 0 0 0;">Best regards,<br><strong>The Hometown Marketplace Team</strong></p>
+            </div>
           </div>
         </body>
       </html>
@@ -522,17 +570,26 @@ New Product Request
 
 Hi ${sellerName},
 
-You have received a new request for one of your products!
+📬 You have a new request!
 
+REQUEST DETAILS:
 Product: ${productName}
 Buyer: ${buyerName}
-Buyer Email: ${buyerEmail}
 Quantity: ${quantity}
-Unit Price: $${productPrice.toFixed(2)}
-Total Price: $${totalPrice.toFixed(2)}
-${message ? `Buyer's Message: ${message}` : ''}
+Price per item: $${productPrice.toFixed(2)}
+Total: $${totalPrice.toFixed(2)}
 
-Please review this request in your Hometown Marketplace dashboard and approve or reject it.
+Buyer Contact: ${buyerEmail}
+
+${message ? `Buyer's Message: "${message}"\n` : ''}
+
+Action Required:
+Please review this request in your Hometown Marketplace dashboard and approve or reject it. The buyer will be notified of your decision via email.
+
+Quick Tips:
+• Check your available inventory
+• Consider pickup/delivery logistics
+• Respond promptly to maintain buyer trust
 
 Best regards,
 The Hometown Marketplace Team
