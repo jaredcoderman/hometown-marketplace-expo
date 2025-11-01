@@ -72,6 +72,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Email config with API keys (don't commit API keys!)
+config/email.ts
+
 # typescript
 *.tsbuildinfo
 

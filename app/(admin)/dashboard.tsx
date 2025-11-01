@@ -3,15 +3,26 @@ import { useAdminView } from '@/contexts/AdminViewContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AdminDashboardScreen() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { mode } = useAdminView();
 
-  if (!user?.isAdmin) {
-    router.replace('/(buyer)/dashboard');
+  // Redirect non-admin users after component mounts
+  useEffect(() => {
+    if (!loading && user && !user.isAdmin) {
+      router.replace('/(buyer)/dashboard');
+    }
+  }, [user, loading]);
+
+  // Show nothing while checking auth or redirecting
+  if (loading || !user) {
+    return null;
+  }
+
+  if (!user.isAdmin) {
     return null;
   }
 
