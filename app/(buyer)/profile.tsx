@@ -5,8 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -20,6 +20,20 @@ export default function ProfileScreen() {
   const { location, getCurrentLocation } = useLocation();
   const { show } = useToast();
   const [confirmLogoutVisible, setConfirmLogoutVisible] = useState(false);
+
+  // Redirect sellers to their seller profile page
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.userType === 'seller') {
+        router.replace('/(seller)/profile');
+      }
+    }, [user?.userType])
+  );
+
+  // If user is a seller, don't render buyer profile (will redirect)
+  if (user?.userType === 'seller') {
+    return null;
+  }
 
   const handleLogout = () => {
     setConfirmLogoutVisible(true);

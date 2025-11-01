@@ -138,6 +138,7 @@ function docToSeller(doc: any): Seller {
     avatar: data.avatar,
     coverImage: data.coverImage,
     categories: data.categories || [],
+    venmo: data.venmo,
     createdAt: data.createdAt?.toDate() || new Date(),
     updatedAt: data.updatedAt?.toDate() || new Date(),
   };

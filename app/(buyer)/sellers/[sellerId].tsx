@@ -1,6 +1,7 @@
 import { ProductCard } from '@/components/products/product-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { getFavoritesByBuyer, getFavoritesCount, toggleFavorite } from '@/services/favorite.service';
@@ -11,12 +12,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View
 } from 'react-native';
 
 export default function SellerDetailScreen() {
@@ -152,6 +153,12 @@ export default function SellerDetailScreen() {
               ))}
             </View>
           )}
+
+          {seller.venmo && (
+            <View style={styles.venmoContainer}>
+              <Text style={styles.venmoText}>Venmo: @{seller.venmo}</Text>
+            </View>
+          )}
         </View>
 
         {/* Products Section */}
@@ -267,6 +274,19 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     color: '#666',
+  },
+  venmoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 12,
+  },
+  venmoText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.primary,
   },
   productsSection: {
     padding: 16,

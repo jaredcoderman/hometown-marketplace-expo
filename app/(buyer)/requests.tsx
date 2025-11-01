@@ -21,6 +21,7 @@ export default function BuyerRequestsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [sellerNamesById, setSellerNamesById] = useState<Record<string, string>>({});
+  const [sellerVenmoById, setSellerVenmoById] = useState<Record<string, string>>({});
   const previousStatusesRef = useRef<Record<string, string>>({});
 
   // Clear notifications immediately when screen is focused
@@ -72,7 +73,7 @@ export default function BuyerRequestsScreen() {
       setLoading(false);
       setRefreshing(false);
 
-      // Load seller names for display
+      // Load seller names and venmo for display
       setSellerNamesById((prev) => {
         const uniqueSellerIds = Array.from(new Set(sorted.map((r) => r.sellerId)));
         uniqueSellerIds.forEach((id) => {
@@ -81,6 +82,9 @@ export default function BuyerRequestsScreen() {
           getSeller(id)
             .then((seller) => {
               setSellerNamesById((p) => (p[id] ? p : { ...p, [id]: seller.businessName }));
+              if (seller.venmo) {
+                setSellerVenmoById((p) => (p[id] ? p : { ...p, [id]: seller.venmo! }));
+              }
             })
             .catch(() => {
               setSellerNamesById((p) => (p[id] ? p : { ...p, [id]: 'Unknown Seller' }));
@@ -123,6 +127,9 @@ export default function BuyerRequestsScreen() {
         </View>
       </View>
       <Text style={styles.sellerText}>Seller: {sellerNamesById[item.sellerId] || item.sellerId}</Text>
+      {sellerVenmoById[item.sellerId] && (
+        <Text style={styles.venmoText}>Venmo: @{sellerVenmoById[item.sellerId]}</Text>
+      )}
       <View style={styles.rowBetween}>
         <Text style={styles.metaText}>Qty: {item.quantity}</Text>
         <Text style={styles.total}>{formatPrice(item.totalPrice)}</Text>
@@ -152,17 +159,20 @@ export default function BuyerRequestsScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
     // Reload seller names for displayed requests
-    const uniqueSellerIds = Array.from(new Set(requests.map((r) => r.sellerId)));
-    await Promise.all(
-      uniqueSellerIds.map(async (id) => {
-        try {
-          const seller = await getSeller(id);
-          setSellerNamesById((prev) => ({ ...prev, [id]: seller.businessName }));
-        } catch {
-          setSellerNamesById((prev) => ({ ...prev, [id]: 'Unknown Seller' }));
-        }
-      })
-    );
+                const uniqueSellerIds = Array.from(new Set(requests.map((r) => r.sellerId)));
+                await Promise.all(
+                  uniqueSellerIds.map(async (id) => {
+                    try {
+                      const seller = await getSeller(id);
+                      setSellerNamesById((prev) => ({ ...prev, [id]: seller.businessName }));
+                      if (seller.venmo) {
+                        setSellerVenmoById((prev) => ({ ...prev, [id]: seller.venmo! }));
+                      }
+                    } catch {
+                      setSellerNamesById((prev) => ({ ...prev, [id]: 'Unknown Seller' }));
+                    }
+                  })
+                );
     setRefreshing(false);
   };
 
@@ -271,6 +281,7 @@ const styles = StyleSheet.create({
   },
   statusText: { fontSize: 11, fontWeight: '700' },
   sellerText: { marginTop: 4, fontSize: 12, color: Colors.textSecondary },
+  venmoText: { marginTop: 4, fontSize: 12, color: Colors.primary, fontWeight: '500' },
   metaText: { marginTop: 6, fontSize: 12, color: Colors.textSecondary },
   total: { marginTop: 6, fontSize: 16, fontWeight: '700', color: Colors.primary },
   message: { marginTop: 8, fontSize: 13, color: Colors.text },

@@ -34,6 +34,7 @@ export default function SellerProfileScreen() {
   const [businessName, setBusinessName] = useState('');
   const [description, setDescription] = useState('');
   const [categories, setCategories] = useState('');
+  const [venmo, setVenmo] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { show } = useToast();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export default function SellerProfileScreen() {
         setBusinessName(sellerData.businessName);
         setDescription(sellerData.description);
         setCategories(sellerData.categories?.join(', ') || '');
+        setVenmo(sellerData.venmo || '');
         setAvatarUrl(sellerData.avatar || null);
       }
     } catch (error) {
@@ -102,6 +104,11 @@ export default function SellerProfileScreen() {
         if (avatarUrl) {
           updateData.avatar = avatarUrl;
         }
+        if (venmo.trim()) {
+          updateData.venmo = venmo.trim().replace(/^@/, ''); // Remove leading @ if present
+        } else {
+          updateData.venmo = null; // Clear venmo if empty
+        }
         await updateSeller(seller.id, updateData);
         show('Profile updated successfully!', 'success');
       } else {
@@ -115,6 +122,9 @@ export default function SellerProfileScreen() {
         };
         if (avatarUrl) {
           sellerData.avatar = avatarUrl;
+        }
+        if (venmo.trim()) {
+          sellerData.venmo = venmo.trim().replace(/^@/, ''); // Remove leading @ if present
         }
         await createSeller(user.id, sellerData);
         show('Seller profile created successfully!', 'success');
@@ -234,6 +244,13 @@ export default function SellerProfileScreen() {
             onChangeText={setCategories}
             placeholder="e.g., Pottery, Jewelry, Art (comma separated)"
             error={errors.categories}
+          />
+
+          <Input
+            label="Venmo (Optional)"
+            value={venmo}
+            onChangeText={(text) => setVenmo(text.replace(/^@/, ''))}
+            placeholder="Your Venmo username"
           />
 
           <View style={styles.locationInfo}>

@@ -37,6 +37,7 @@ export interface Seller {
   avatar?: string;
   coverImage?: string;
   categories?: string[];
+  venmo?: string;
 }
 
 export interface Product {
