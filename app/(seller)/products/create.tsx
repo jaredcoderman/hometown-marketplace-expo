@@ -84,6 +84,7 @@ export default function CreateProductScreen() {
       }
 
       // Create product
+      const parsedQuantity = quantity ? parseInt(quantity) : undefined;
       await createProduct({
         sellerId: seller.id,
         name: name.trim(),
@@ -91,8 +92,8 @@ export default function CreateProductScreen() {
         price: parseFloat(price),
         category: category.trim(),
         images: imageUrls,
-        inStock: true,
-        quantity: quantity ? parseInt(quantity) : undefined,
+        inStock: parsedQuantity !== undefined ? parsedQuantity > 0 : true,
+        quantity: parsedQuantity,
       });
 
       // Clear all fields

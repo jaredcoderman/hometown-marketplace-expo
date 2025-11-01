@@ -7,8 +7,8 @@ import { getAllProducts } from '@/services/product.service';
 import { getSeller } from '@/services/seller.service';
 import { Product } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     FlatList,
     StyleSheet,
@@ -90,6 +90,30 @@ export default function SearchScreen() {
     loadFavoritesProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onlyFavorites, user?.id]);
+
+  // Reload favorite IDs and counts when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (products.length > 0 && user?.id) {
+        // Reload favorite IDs and counts without full reload
+        const reloadFavorites = async () => {
+          try {
+            const [favs, counts] = await Promise.all([
+              getFavoritesByBuyer(user.id),
+              Promise.all(
+                products.map(async (p) => [p.id, await getFavoritesCount(p.id)] as const)
+              ),
+            ]);
+            setFavoriteIds(new Set(favs));
+            setFavoriteCounts(Object.fromEntries(counts));
+          } catch (error) {
+            // Silently fail - favorites are not critical
+          }
+        };
+        reloadFavorites();
+      }
+    }, [products, user?.id])
+  );
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);

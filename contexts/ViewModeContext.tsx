@@ -26,9 +26,17 @@ export function ViewModeProvider({ children }: { children: React.ReactNode }) {
       const stored = await AsyncStorage.getItem(VIEW_MODE_STORAGE_KEY);
       if (stored === 'buyer' || stored === 'seller') {
         setModeState(stored);
+      } else {
+        // Default to 'seller' mode if no stored preference
+        // This ensures sellers start in seller mode by default
+        setModeState('seller');
+        // Save the default so it persists
+        await AsyncStorage.setItem(VIEW_MODE_STORAGE_KEY, 'seller');
       }
     } catch (error) {
       console.error('Error loading view mode:', error);
+      // On error, default to seller mode
+      setModeState('seller');
     } finally {
       setLoading(false);
     }

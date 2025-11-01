@@ -40,3 +40,15 @@ export async function clearPendingNotifications(userId: string): Promise<void> {
   }
 }
 
+// Remove a specific request ID from pending notifications (when request is deleted)
+export async function removePendingNotification(userId: string, requestId: string): Promise<void> {
+  try {
+    const key = `${PENDING_NOTIFICATIONS_KEY}_${userId}`;
+    const pending = await getPendingNotificationIds(userId);
+    pending.delete(requestId);
+    await AsyncStorage.setItem(key, JSON.stringify(Array.from(pending)));
+  } catch (error) {
+    console.error('Error removing pending notification:', error);
+  }
+}
+

@@ -1,13 +1,14 @@
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { subscribeToBuyerRequests } from '@/services/request.service';
+import { deleteRequest, subscribeToBuyerRequests } from '@/services/request.service';
 import { getSeller } from '@/services/seller.service';
 import { ProductRequest } from '@/types';
 import { formatPrice } from '@/utils/formatters';
-import { clearPendingNotifications } from '@/utils/notifications';
+import { clearPendingNotifications, removePendingNotification } from '@/utils/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -23,6 +24,9 @@ export default function BuyerRequestsScreen() {
   const [sellerNamesById, setSellerNamesById] = useState<Record<string, string>>({});
   const [sellerVenmoById, setSellerVenmoById] = useState<Record<string, string>>({});
   const previousStatusesRef = useRef<Record<string, string>>({});
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Clear notifications immediately when screen is focused
   useFocusEffect(
@@ -117,13 +121,46 @@ export default function BuyerRequestsScreen() {
     }
   };
 
+  const handleDeleteRequest = (requestId: string) => {
+    setRequestToDelete(requestId);
+    setConfirmDeleteVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!requestToDelete || !user?.id) return;
+    setDeleting(true);
+    try {
+      await deleteRequest(requestToDelete);
+      // Remove notification if one exists for this request
+      await removePendingNotification(user.id, requestToDelete);
+      show('Request deleted', 'success');
+      setConfirmDeleteVisible(false);
+      setRequestToDelete(null);
+    } catch (error: any) {
+      console.error('Error deleting request:', error);
+      show('Failed to delete request', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const renderItem = ({ item }: { item: ProductRequest }) => (
     <View style={styles.card}>
       <View style={styles.rowBetween}>
         <Text style={styles.productName}>{item.productName}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusBackground(item.status) }]}>
-          <Ionicons name={item.status === 'pending' ? 'time-outline' : item.status === 'approved' ? 'checkmark-circle' : 'close-circle'} size={14} color={getStatusColor(item.status)} style={{ marginRight: 4 }} />
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status.toUpperCase()}</Text>
+        <View style={styles.statusRow}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusBackground(item.status) }]}>
+            <Ionicons name={item.status === 'pending' ? 'time-outline' : item.status === 'approved' ? 'checkmark-circle' : 'close-circle'} size={14} color={getStatusColor(item.status)} style={{ marginRight: 4 }} />
+            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status.toUpperCase()}</Text>
+          </View>
+          {item.status === 'pending' && (
+            <TouchableOpacity
+              onPress={() => handleDeleteRequest(item.id)}
+              style={[styles.deleteButton, { marginLeft: 8 }]}
+            >
+              <Ionicons name="close" size={18} color={Colors.error} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
       <Text style={styles.sellerText}>Seller: {sellerNamesById[item.sellerId] || item.sellerId}</Text>
@@ -224,6 +261,20 @@ export default function BuyerRequestsScreen() {
           />
         </>
       )}
+      
+      <ConfirmModal
+        visible={confirmDeleteVisible}
+        title="Delete Request"
+        message="Are you sure you want to delete this request? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setConfirmDeleteVisible(false);
+          setRequestToDelete(null);
+        }}
+        loading={deleting}
+      />
     </View>
   );
 }
@@ -272,12 +323,25 @@ const styles = StyleSheet.create({
   },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   productName: { fontSize: 16, fontWeight: '600', color: Colors.text, flex: 1, marginRight: 12 },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
+  },
+  deleteButton: {
+    padding: 6,
+    borderRadius: 12,
+    backgroundColor: Colors.backgroundSecondary,
+    minWidth: 28,
+    minHeight: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statusText: { fontSize: 11, fontWeight: '700' },
   sellerText: { marginTop: 4, fontSize: 12, color: Colors.textSecondary },

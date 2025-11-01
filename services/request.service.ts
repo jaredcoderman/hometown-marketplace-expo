@@ -3,6 +3,7 @@ import { ProductRequest } from '@/types';
 import {
     addDoc,
     collection,
+    deleteDoc,
     doc,
     getDoc,
     getDocs,
@@ -102,6 +103,12 @@ export async function updateRequestStatus(
     status,
     updatedAt: serverTimestamp(),
   });
+}
+
+// Delete a request (for buyers to retract pending requests)
+export async function deleteRequest(requestId: string): Promise<void> {
+  const docRef = doc(db, REQUESTS_COLLECTION, requestId);
+  await deleteDoc(docRef);
 }
 
 // Subscribe to real-time updates for buyer requests

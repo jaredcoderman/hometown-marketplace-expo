@@ -4,6 +4,7 @@ import Colors from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -19,19 +20,21 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { location, getCurrentLocation } = useLocation();
   const { show } = useToast();
+  const { mode } = useViewMode();
   const [confirmLogoutVisible, setConfirmLogoutVisible] = useState(false);
 
-  // Redirect sellers to their seller profile page
+  // Redirect sellers to their seller profile page ONLY if they're in seller mode
+  // If they're in buyer mode, show them the buyer profile
   useFocusEffect(
     useCallback(() => {
-      if (user?.userType === 'seller') {
+      if (user?.userType === 'seller' && mode === 'seller') {
         router.replace('/(seller)/profile');
       }
-    }, [user?.userType])
+    }, [user?.userType, mode])
   );
 
-  // If user is a seller, don't render buyer profile (will redirect)
-  if (user?.userType === 'seller') {
+  // If user is a seller AND in seller mode, don't render buyer profile (will redirect)
+  if (user?.userType === 'seller' && mode === 'seller') {
     return null;
   }
 
@@ -59,8 +62,15 @@ export default function ProfileScreen() {
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.email}>{user?.email}</Text>
         <View style={styles.badgeRow}>
-          <Ionicons name="person" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
-          <Text style={styles.badgeText}>Buyer</Text>
+          <Ionicons 
+            name={user?.userType === 'seller' ? 'storefront-outline' : 'person'} 
+            size={16} 
+            color={Colors.primary} 
+            style={{ marginRight: 6 }} 
+          />
+          <Text style={styles.badgeText}>
+            {user?.userType === 'seller' ? 'Seller (Buy Mode)' : 'Buyer'}
+          </Text>
         </View>
       </View>
 

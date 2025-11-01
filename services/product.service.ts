@@ -83,6 +83,11 @@ export async function updateProduct(
   productId: string,
   updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>
 ): Promise<void> {
+  // Automatically set inStock to false if quantity reaches 0
+  if (updates.quantity !== undefined) {
+    updates.inStock = updates.quantity > 0;
+  }
+
   await updateDoc(doc(db, PRODUCTS_COLLECTION, productId), {
     ...updates,
     updatedAt: serverTimestamp(),

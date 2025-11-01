@@ -9,8 +9,8 @@ import { getProductsBySeller } from '@/services/product.service';
 import { getSeller } from '@/services/seller.service';
 import { Product, Seller } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Image,
     Pressable,
@@ -33,6 +33,30 @@ export default function SellerDetailScreen() {
   useEffect(() => {
     loadSellerData();
   }, [sellerId]);
+
+  // Reload favorite counts and favorite IDs when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (products.length > 0 && user?.id) {
+        // Reload favorite IDs and counts without full reload
+        const reloadFavorites = async () => {
+          try {
+            const [favs, counts] = await Promise.all([
+              getFavoritesByBuyer(user.id),
+              Promise.all(
+                products.map(async (p) => [p.id, await getFavoritesCount(p.id)] as const)
+              ),
+            ]);
+            setFavoriteIds(new Set(favs));
+            setFavoriteCounts(Object.fromEntries(counts));
+          } catch (error) {
+            // Silently fail - favorites are not critical
+          }
+        };
+        reloadFavorites();
+      }
+    }, [products, user?.id])
+  );
 
   const loadSellerData = async () => {
     if (!sellerId) return;

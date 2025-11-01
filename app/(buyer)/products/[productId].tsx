@@ -11,8 +11,8 @@ import { getSeller } from '@/services/seller.service';
 import { Product, Seller } from '@/types';
 import { formatPrice } from '@/utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Dimensions,
     Image,
@@ -63,6 +63,25 @@ export default function ProductDetailScreen() {
     }
     loadCount();
   }, [productId]);
+
+  // Reload favorite count and favorite status when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (productId && user?.id) {
+        const reloadFavoriteData = async () => {
+          try {
+            const [fav, count] = await Promise.all([
+              isProductFavorited(user.id, String(productId)),
+              getFavoritesCount(String(productId)),
+            ]);
+            setIsFavorite(fav);
+            setFavoritesCount(count);
+          } catch {}
+        };
+        reloadFavoriteData();
+      }
+    }, [productId, user?.id])
+  );
 
   const loadProductData = async () => {
     if (!productId) return;
@@ -158,19 +177,7 @@ export default function ProductDetailScreen() {
         options={{
           title: product.name,
           headerShown: true,
-          headerRight: () => (
-            <Pressable
-              onPress={async () => {
-                if (!user?.id) return;
-                const nowFav = await toggleFavorite(user.id, product.id);
-                setIsFavorite(nowFav);
-                setFavoritesCount((c) => Math.max(0, c + (nowFav ? 1 : -1)));
-              }}
-              style={{ paddingHorizontal: 8, paddingVertical: 8 }}
-            >
-              <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color={isFavorite ? '#d9534f' : '#333'} />
-            </Pressable>
-          ),
+          headerRight: () => null,
           headerLeft: () => (
             <Pressable
               onPress={() => {
@@ -215,7 +222,22 @@ export default function ProductDetailScreen() {
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.name} numberOfLines={2}>{product.name}</Text>
-            <Text style={styles.favCount}>❤️ {favoritesCount}</Text>
+            <Pressable
+              onPress={async () => {
+                if (!user?.id) return;
+                const nowFav = await toggleFavorite(user.id, product.id);
+                setIsFavorite(nowFav);
+                setFavoritesCount((c) => Math.max(0, c + (nowFav ? 1 : -1)));
+              }}
+              style={styles.favoriteButton}
+            >
+              <Ionicons 
+                name={isFavorite ? 'heart' : 'heart-outline'} 
+                size={24} 
+                color={isFavorite ? '#d9534f' : '#333'} 
+              />
+              <Text style={styles.favCount}>{favoritesCount}</Text>
+            </Pressable>
           </View>
           <Text style={styles.price}>{formatPrice(product.price)}</Text>
 
@@ -385,8 +407,18 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginBottom: 16,
   },
+  favoriteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.card,
+    gap: 6,
+  },
   favCount: {
-    fontSize: 18,
+    fontSize: 16,
     color: Colors.textSecondary,
     fontWeight: '600',
   },

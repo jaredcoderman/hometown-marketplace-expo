@@ -1,0 +1,18 @@
+# Cursor Rules for Hometown Marketplace
+
+## Changelog Maintenance
+- After completing significant features, improvements, or bug fixes, update `CHANGELOG.md` with generalized, high-level entries
+- Group changes into: Features, Improvements, and Bug Fixes
+- Keep entries concise and user-focused, not overly technical
+- Add entries to the `[Unreleased]` section at the top of the changelog
+- When asked to deploy or at the end of a session, remind about updating the changelog if needed
+
+## Code Style
+- Follow TypeScript best practices
+- Use React Native conventions
+- Maintain consistency with existing codebase patterns
+
+## Documentation
+- Keep changes generalized in changelog - focus on user-facing impacts rather than technical details
+- Update relevant documentation when adding new features
+
