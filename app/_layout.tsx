@@ -10,11 +10,14 @@ import 'react-native-reanimated';
 import { BugReportModal } from '@/components/ui/bug-report-modal';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Colors from '@/constants/Colors';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AdminViewProvider, useAdminView } from '@/contexts/AdminViewContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { LocationProvider } from '@/contexts/LocationContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { ViewModeProvider } from '@/contexts/ViewModeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { Text } from 'react-native';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -52,6 +55,59 @@ const AutumnTheme = {
   },
 };
 
+function AdminToggleButton() {
+  const { user } = useAuth();
+  const { mode, setMode } = useAdminView();
+  
+  // Only show for admin users
+  if (!user?.isAdmin) return null;
+
+  const handleToggle = async () => {
+    const newMode = mode === 'admin' ? 'user' : 'admin';
+    await setMode(newMode);
+    
+    if (newMode === 'admin') {
+      router.replace('/(admin)/dashboard');
+    } else {
+      // Navigate back to appropriate dashboard based on user type
+      if (user.userType === 'seller') {
+        router.replace('/(seller)/dashboard');
+      } else {
+        router.replace('/(buyer)/dashboard');
+      }
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={handleToggle}
+      style={{
+        marginLeft: 16,
+        padding: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: mode === 'admin' ? Colors.primary : Colors.backgroundSecondary,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+      }}
+    >
+      <Ionicons 
+        name={mode === 'admin' ? 'shield' : 'shield-outline'} 
+        size={18} 
+        color={mode === 'admin' ? '#FFF' : Colors.textSecondary}
+        style={{ marginRight: 6 }}
+      />
+      <Text style={{
+        fontSize: 12,
+        fontWeight: '600',
+        color: mode === 'admin' ? '#FFF' : Colors.textSecondary,
+      }}>
+        {mode === 'admin' ? 'Admin' : 'User'}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 function BugReportButton() {
   const [modalVisible, setModalVisible] = useState(false);
   
@@ -64,9 +120,11 @@ function BugReportButton() {
           padding: 4,
         }}
       >
-        <Ionicons name="bug-outline" size={24} color={Colors.text} />
+        <Ionicons name="chatbox-ellipses-outline" size={24} color={Colors.text} />
       </TouchableOpacity>
-      <BugReportModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+      <BugReportModal visible={modalVisible} onClose={() => {
+        setModalVisible(false);
+      }} />
     </>
   );
 }
@@ -92,9 +150,10 @@ function RootLayoutContent() {
 
   return (
     <LocationProvider>
-      <ViewModeProvider>
-        <ThemeProvider value={AutumnTheme}>
-          <ToastProvider>
+      <AdminViewProvider>
+        <ViewModeProvider>
+          <ThemeProvider value={AutumnTheme}>
+            <ToastProvider>
             <Stack
               screenOptions={{
                 headerShown: true,
@@ -105,6 +164,7 @@ function RootLayoutContent() {
                     style={{ height: 36, width: 36, resizeMode: 'contain' }}
                   />
                 ),
+                headerLeft: () => <AdminToggleButton />,
                 headerRight: () => <BugReportButton />,
               }}
             >
@@ -112,11 +172,13 @@ function RootLayoutContent() {
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(buyer)" />
               <Stack.Screen name="(seller)" />
+              <Stack.Screen name="(admin)" />
             </Stack>
             <StatusBar style="dark" />
           </ToastProvider>
         </ThemeProvider>
       </ViewModeProvider>
+      </AdminViewProvider>
     </LocationProvider>
   );
 }

@@ -21,6 +21,7 @@ export interface User {
   updatedAt: Date;
   phoneNumber?: string;
   avatar?: string;
+  isAdmin?: boolean;
 }
 
 export interface Seller {
@@ -126,6 +127,19 @@ export interface BugReport {
   title: string;
   description: string;
   status: 'open' | 'investigating' | 'resolved' | 'closed';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Suggestions
+export interface Suggestion {
+  id: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  title: string;
+  description: string;
+  status: 'open' | 'under-review' | 'implemented' | 'closed';
   createdAt: Date;
   updatedAt: Date;
 }
