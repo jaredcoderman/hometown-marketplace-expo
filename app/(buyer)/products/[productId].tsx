@@ -379,7 +379,7 @@ export default function ProductDetailScreen() {
             </View>
 
             {/* Detailed Rating Display */}
-            {product.rating && product.rating > 0 && reviews.length > 0 && (
+            {(product.rating && product.rating > 0 && reviews.length > 0) ? (
               <View style={styles.ratingBreakdown}>
                 <View style={styles.ratingOverview}>
                   <Text style={styles.ratingLarge}>{product.rating.toFixed(1)}</Text>
@@ -404,7 +404,7 @@ export default function ProductDetailScreen() {
                   })}
                 </View>
               </View>
-            )}
+            ) : null}
 
             {/* Write Review Button - Only show if buyer can review */}
             {canReview && !hasReviewed && !showReviewForm && (
