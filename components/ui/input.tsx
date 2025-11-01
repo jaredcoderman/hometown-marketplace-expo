@@ -89,8 +89,9 @@ const styles = StyleSheet.create({
   iconContainer: {
     position: 'absolute',
     right: 12,
-    top: '50%',
-    transform: [{ translateY: -10 }],
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 4,
   },
   inputError: {

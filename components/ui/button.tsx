@@ -1,14 +1,14 @@
+import Colors from '@/constants/Colors';
 import React from 'react';
 import {
-    ActivityIndicator,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextStyle,
-    ViewStyle
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextStyle,
+  ViewStyle
 } from 'react-native';
-import Colors from '@/constants/Colors';
 
 interface ButtonProps {
   title?: string;
