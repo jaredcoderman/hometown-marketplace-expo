@@ -10,12 +10,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function ProductsListScreen() {
@@ -93,7 +93,7 @@ export default function ProductsListScreen() {
       <View style={styles.container}>
         {products.length === 0 ? (
           <EmptyState
-            icon="📦"
+            iconNode={<Ionicons name="cube-outline" size={64} color={Colors.textSecondary} />}
             title="No Products Yet"
             description="Start listing products to sell to local buyers."
             actionLabel="Add Your First Product"

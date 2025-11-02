@@ -38,7 +38,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({ show }), [show]);
 
-  const backgroundColor = type === 'success' ? '#2e7d32' : type === 'error' ? '#c62828' : Colors.primary;
+  const backgroundColor = type === 'success' ? '#A5D6A7' : type === 'error' ? '#EF9A9A' : Colors.primary + 'E6';
+  const textColor = type === 'success' ? '#1B5E20' : type === 'error' ? '#B71C1C' : '#fff';
 
   return (
     <ToastContext.Provider value={value}>
@@ -56,7 +57,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               },
             ]}
           >
-            <Text style={styles.text}>{message}</Text>
+            <Text style={[styles.text, { color: textColor }]}>{message}</Text>
           </Animated.View>
         )}
       </View>

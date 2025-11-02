@@ -193,7 +193,7 @@ export default function SellerDetailScreen() {
 
           {products.length === 0 ? (
             <EmptyState
-              icon="📦"
+              iconNode={<Ionicons name="cube-outline" size={64} color={Colors.textSecondary} />}
               title="No Products"
               description="This seller hasn't listed any products yet"
             />
